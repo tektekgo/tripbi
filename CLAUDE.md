@@ -18,6 +18,9 @@
 | **Trip Status** | ✅ Complete | Planning/Active/Completed badges |
 | **Day Filter** | ✅ Complete | Filter proposals by trip day |
 | **Timezone Support** | ✅ Complete | Destination + home timezone display |
+| **Trip Settings** | ✅ Complete | Edit trip details, delete trip (admin only) |
+| **Timeline Export** | ✅ Complete | PDF download + shareable public link |
+| **Profile Page** | ✅ Complete | View user info, sign out (read-only) |
 | **Splitbi Integration** | 🔲 Not Started | Optional, future |
 
 ### Infrastructure Status
@@ -56,6 +59,8 @@
 - `CreateProposalModal.tsx` - Category selector + details form
 - `ProposalDetailModal.tsx` - Full proposal view with voting/comments
 - `InviteMemberModal.tsx` - Email invites + shareable link
+- `BookingModal.tsx` - Mark proposal as booked
+- `TripSettingsModal.tsx` - Edit/delete trip, timezone settings
 
 **Trip Features** (`src/features/trips/`)
 - `TripCard.tsx` - Trip card with cover, dates, members
@@ -84,12 +89,15 @@
 - `TimelineItem.tsx` - Single timeline entry
 - `TimelineDay.tsx` - Day grouping
 - `TimelineView.tsx` - Full timeline with day groups
+- `TimelineExport.tsx` - PDF export + shareable link generation
 
 **Pages** (`src/pages/`)
 - `Home.tsx` - Landing (logged out) / Dashboard (logged in)
 - `Trips.tsx` - Trip list page
 - `TripDetail.tsx` - Trip workspace with 3 tabs
 - `AcceptInvite.tsx` - Invitation acceptance flow
+- `Profile.tsx` - User profile page (read-only)
+- `SharedTimeline.tsx` - Public timeline view (no auth required)
 
 **Cloud Functions** (`functions/src/`)
 - `index.ts` - sendInviteEmail function (Resend integration)
@@ -129,6 +137,13 @@ invitations/{invitationId}
   - status: 'pending' | 'accepted' | 'expired'
   - createdBy, createdAt, expiresAt
   - acceptedBy?, acceptedAt?
+
+sharedTimelines/{token}
+  - id, tripId, tripName, destination
+  - startDate, endDate
+  - token, createdBy, createdAt
+  - expiresAt? (optional expiration)
+  - proposals: ShareableProposal[] (snapshot of decided proposals)
 ```
 
 ---
@@ -138,12 +153,11 @@ invitations/{invitationId}
 ### Future Features
 
 - Splitbi integration toggle
-- Export timeline to PDF
 - Push notifications
-- Profile/settings page
-- Trip settings (edit, delete, leave)
-- Member role management (admin/member)
+- Leave trip (for non-admin members)
+- Member role management (admin/member permissions)
 - Trip cover image upload
+- Edit profile (change display name, photo)
 
 ---
 
@@ -225,7 +239,7 @@ const activeProposals = useMemo(() => proposals.filter(p => p.tripId === activeT
 ### Screen Types
 
 ```typescript
-type Screen = 'home' | 'dashboard' | 'trips' | 'trip-detail' | 'profile' | 'create' | 'invite'
+type Screen = 'home' | 'dashboard' | 'trips' | 'trip-detail' | 'profile' | 'create' | 'invite' | 'shared-timeline'
 ```
 
 ### Invite Flow
@@ -276,10 +290,12 @@ The email function sends from `invite@mail.tripbi.app`. Domain setup:
 ### Firebase Project: tripbi-dev
 
 ```
-API Key: AIzaSyBVYLF0vAqMachzcZQUwHo3V6AYH4aA0lU
-Auth Domain: tripbi-dev.firebaseapp.com
 Project ID: tripbi-dev
+Auth Domain: tripbi-dev.firebaseapp.com
 Storage Bucket: tripbi-dev.firebasestorage.app
+
+# API keys and other secrets are in .env.development (not committed to git)
+# See .env.example for the required environment variables
 ```
 
 ---
