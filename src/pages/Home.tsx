@@ -106,6 +106,19 @@ export default function Home({ onNavigate }: HomeProps) {
               </svg>
               Use email address
             </button>
+
+            {/* Creator attribution */}
+            <p className="text-center text-xs text-primary-700/50 mt-8">
+              Created by Sujit{' '}
+              <a
+                href="https://www.ai-focus.org"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline hover:text-primary-600 transition-colors"
+              >
+                ai-focus.org
+              </a>
+            </p>
           </div>
         </main>
 

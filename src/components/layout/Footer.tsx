@@ -34,7 +34,7 @@ export default function Footer({ className = '', minimal = false }: FooterProps)
           © {currentYear} <span className="font-medium">TripBi</span>. Bi-Suite Solutions.
         </p>
         <p className="text-center text-xs text-primary-700/50 mt-1">
-          {versionDisplay} Beta · Built {formattedDate}
+          {versionDisplay} Beta · Built {formattedDate} · Sujit
         </p>
       </footer>
     )
@@ -47,7 +47,7 @@ export default function Footer({ className = '', minimal = false }: FooterProps)
           © {currentYear} <span className="font-medium">TripBi</span>. Bi-Suite Solutions.
         </p>
         <p className="text-center text-xs text-primary-700/50 mt-1">
-          {versionDisplay} Beta · Built {formattedDate}
+          {versionDisplay} Beta · Built {formattedDate} · Sujit
         </p>
       </div>
     </footer>
