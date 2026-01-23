@@ -2,7 +2,7 @@
 
 ## Project Status
 
-**Last Updated:** January 22, 2026
+**Last Updated:** January 23, 2026
 
 ### Current State - MVP Features
 
@@ -14,6 +14,10 @@
 | **Phase 4: Booking Tracker** | ✅ Complete | Mark as booked, view group status |
 | **Phase 5: Timeline View** | ✅ Complete | Auto-generated from decided proposals |
 | **Phase 6: Member Invites** | ✅ Complete | Email + shareable link both work |
+| **Personal Reactions** | ✅ Complete | Private interest tracking (Interested/Maybe/Not for me) |
+| **Trip Status** | ✅ Complete | Planning/Active/Completed badges |
+| **Day Filter** | ✅ Complete | Filter proposals by trip day |
+| **Timezone Support** | ✅ Complete | Destination + home timezone display |
 | **Splitbi Integration** | 🔲 Not Started | Optional, future |
 
 ### Infrastructure Status
@@ -41,6 +45,11 @@
 - `Avatar.tsx` - User avatar with initials fallback + AvatarGroup
 - `EmptyState.tsx` - Empty state placeholder
 - `CategoryIcon.tsx` - Icons for 6 proposal categories
+- `TimeDisplay.tsx` - Dual-timezone time display (full + compact)
+- `TimezoneSelector.tsx` - Searchable timezone dropdown
+
+**Utilities** (`src/utils/`)
+- `timezone.ts` - Timezone utilities, city mappings, offset calculations
 
 **Modals** (`src/components/modals/`)
 - `CreateTripModal.tsx` - Trip creation form
@@ -55,8 +64,8 @@
 **Proposal Features** (`src/features/proposals/`)
 - `StatusBadge.tsx` - Proposed/Discussing/Decided badges
 - `CategorySelector.tsx` - 6-category grid selector
-- `ProposalCard.tsx` - Proposal summary card
-- `ProposalList.tsx` - List with filters
+- `ProposalCard.tsx` - Proposal summary card with personal reactions
+- `ProposalList.tsx` - List with status and day filters
 - `CommentItem.tsx` - Single comment display
 - `CommentForm.tsx` - Add comment input
 - `CommentList.tsx` - Comments section
@@ -104,6 +113,10 @@ proposals/{proposalId}
   - scheduledDate?, scheduledTime?
   - votes: Vote[]
   - comments: Comment[]
+  - reactions?: Reaction[] (private interest: interested/maybe/not_interested)
+
+trips/{tripId} (additional fields)
+  - timezoneSettings?: { destinationTimezone, homeTimezone?, showHomeTimezone }
 
 bookings/{bookingId}
   - tripId, proposalId, userId
@@ -273,7 +286,8 @@ Storage Bucket: tripbi-dev.firebasestorage.app
 
 ## Related Documentation
 
-- `docs/product/TripBi_Product_Spec-v01-12182025.md` - Full product spec
+- `docs/FEATURES.md` - **All implemented features reference** (user-facing)
+- `docs/product/TripBi_Product_Spec-v01-12182025.md` - Original product spec
 - `docs/architecture/DESIGN_SYSTEM.md` - Design system details
 - `docs/integrations/SPLITBI_API_SPEC.md` - Splitbi API contract
 - `docs/guides/` - Various guides

@@ -99,3 +99,27 @@ export function getCategoryLabel(category: Proposal['category']): string {
   }
   return labels[category]
 }
+
+export function getCategoryColor(category: Proposal['category']): string {
+  const colors: Record<Proposal['category'], string> = {
+    flights: 'text-info-600 dark:text-info-400',
+    hotels: 'text-primary-600 dark:text-primary-400',
+    activities: 'text-warning-600 dark:text-warning-400',
+    restaurants: 'text-error-600 dark:text-error-400',
+    transportation: 'text-success-600 dark:text-success-400',
+    tasks: 'text-secondary-600 dark:text-secondary-400',
+  }
+  return colors[category]
+}
+
+export function getCategoryBgColor(category: Proposal['category']): string {
+  const colors: Record<Proposal['category'], string> = {
+    flights: 'bg-info-600',
+    hotels: 'bg-primary-600',
+    activities: 'bg-warning-600',
+    restaurants: 'bg-error-600',
+    transportation: 'bg-success-600',
+    tasks: 'bg-secondary-600',
+  }
+  return colors[category]
+}

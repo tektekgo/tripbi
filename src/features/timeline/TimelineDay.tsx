@@ -1,10 +1,11 @@
-import type { Proposal } from '@/types'
+import type { Proposal, TripTimezoneSettings } from '@/types'
 import TimelineItem from './TimelineItem'
 
 interface TimelineDayProps {
   date: Date
   proposals: Proposal[]
   onProposalClick?: (proposalId: string) => void
+  timezoneSettings?: TripTimezoneSettings
 }
 
 function formatDayHeader(date: Date): { dayOfWeek: string; fullDate: string } {
@@ -26,7 +27,7 @@ function isToday(date: Date): boolean {
   )
 }
 
-export default function TimelineDay({ date, proposals, onProposalClick }: TimelineDayProps) {
+export default function TimelineDay({ date, proposals, onProposalClick, timezoneSettings }: TimelineDayProps) {
   const { dayOfWeek, fullDate } = formatDayHeader(date)
   const today = isToday(date)
 
@@ -65,6 +66,7 @@ export default function TimelineDay({ date, proposals, onProposalClick }: Timeli
             <TimelineItem
               proposal={proposal}
               onClick={onProposalClick ? () => onProposalClick(proposal.id) : undefined}
+              timezoneSettings={timezoneSettings}
             />
             {/* Hide connector on last item */}
             {index === sortedProposals.length - 1 && (

@@ -342,6 +342,7 @@ function AppContent() {
             setIsCreateProposalModalOpen(false)
             setViewingProposalId(proposalId)
           }}
+          timezoneSettings={activeTrip?.timezoneSettings}
         />
       )}
 

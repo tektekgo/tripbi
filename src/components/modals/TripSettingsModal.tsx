@@ -1,9 +1,16 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { doc, updateDoc, deleteDoc, Timestamp } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 import { useAuth } from '@/contexts/AuthContext'
 import Modal from '@/components/ui/Modal'
-import type { Trip } from '@/types'
+import TimezoneSelector from '@/components/ui/TimezoneSelector'
+import {
+  suggestTimezoneForCity,
+  getTimezoneOffset,
+  formatTimezoneOffset,
+  getDefaultTimezoneSettings,
+} from '@/utils/timezone'
+import type { Trip, TripTimezoneSettings } from '@/types'
 
 interface TripSettingsModalProps {
   isOpen: boolean
@@ -40,6 +47,18 @@ export default function TripSettingsModal({
   )
   const [status, setStatus] = useState<TripStatus>(trip.status)
 
+  // Timezone settings state
+  const defaultSettings = getDefaultTimezoneSettings()
+  const [homeTimezone, setHomeTimezone] = useState(
+    trip.timezoneSettings?.homeTimezone || defaultSettings.homeTimezone
+  )
+  const [destinationTimezone, setDestinationTimezone] = useState(
+    trip.timezoneSettings?.destinationTimezone || defaultSettings.destinationTimezone
+  )
+  const [showHomeTime, setShowHomeTime] = useState(
+    trip.timezoneSettings?.showHomeTime ?? defaultSettings.showHomeTime
+  )
+
   // UI state
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
@@ -47,6 +66,20 @@ export default function TripSettingsModal({
   const [error, setError] = useState<string | null>(null)
 
   const isAdmin = trip.createdBy === user?.uid
+
+  // Calculate timezone offset for display
+  const timezoneOffset = getTimezoneOffset(homeTimezone, destinationTimezone)
+  const offsetDisplay = formatTimezoneOffset(timezoneOffset)
+
+  // Auto-suggest destination timezone when destination changes (only if not already set)
+  useEffect(() => {
+    if (!trip.timezoneSettings?.destinationTimezone && destination) {
+      const suggested = suggestTimezoneForCity(destination)
+      if (suggested) {
+        setDestinationTimezone(suggested)
+      }
+    }
+  }, [destination, trip.timezoneSettings?.destinationTimezone])
 
   const handleSave = async () => {
     if (!name.trim() || !destination.trim()) {
@@ -63,6 +96,12 @@ export default function TripSettingsModal({
     setError(null)
 
     try {
+      const timezoneSettings: TripTimezoneSettings = {
+        homeTimezone,
+        destinationTimezone,
+        showHomeTime,
+      }
+
       await updateDoc(doc(db, 'trips', trip.id), {
         name: name.trim(),
         destination: destination.trim(),
@@ -70,6 +109,7 @@ export default function TripSettingsModal({
         startDate: Timestamp.fromDate(new Date(startDate)),
         endDate: Timestamp.fromDate(new Date(endDate)),
         status,
+        timezoneSettings,
         updatedAt: Timestamp.now(),
       })
       onClose()
@@ -204,6 +244,93 @@ export default function TripSettingsModal({
               </label>
             ))}
           </div>
+        </div>
+
+        {/* Timezone Settings */}
+        <div className="pt-4 border-t border-cream-300">
+          <div className="flex items-center gap-2 mb-4">
+            <svg className="w-5 h-5 text-primary-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <h3 className="font-semibold text-primary-700">Timezone Settings</h3>
+          </div>
+
+          {/* Home Timezone */}
+          <div className="mb-4">
+            <TimezoneSelector
+              value={homeTimezone}
+              onChange={setHomeTimezone}
+              label="Your Home Timezone"
+              placeholder="Select your home timezone..."
+              showCurrentTime={true}
+              detectLocalButton={true}
+            />
+            <p className="mt-1 text-xs text-primary-700/50">
+              Where you're traveling from
+            </p>
+          </div>
+
+          {/* Destination Timezone */}
+          <div className="mb-4">
+            <TimezoneSelector
+              value={destinationTimezone}
+              onChange={setDestinationTimezone}
+              label="Destination Timezone"
+              placeholder="Select destination timezone..."
+              showCurrentTime={true}
+            />
+            <p className="mt-1 text-xs text-primary-700/50">
+              The timezone at your destination ({destination || 'your destination'})
+            </p>
+          </div>
+
+          {/* Time Difference Display */}
+          {homeTimezone !== destinationTimezone && (
+            <div className="mb-4 p-3 bg-primary-50 rounded-xl">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <svg className="w-4 h-4 text-primary-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                      d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+                  </svg>
+                  <span className="text-sm text-primary-700">Time difference</span>
+                </div>
+                <span className="font-semibold text-primary-700">{offsetDisplay}</span>
+              </div>
+            </div>
+          )}
+
+          {/* Show Home Time Toggle */}
+          <label className="flex items-center justify-between p-3 bg-cream-200 rounded-xl cursor-pointer group">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-full bg-primary-100 flex items-center justify-center">
+                <svg className="w-4 h-4 text-primary-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                    d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                </svg>
+              </div>
+              <div>
+                <div className="font-medium text-primary-700">Show home time</div>
+                <div className="text-xs text-primary-700/60">
+                  Display home time alongside destination time
+                </div>
+              </div>
+            </div>
+            <div className={`relative w-11 h-6 transition-colors rounded-full
+              ${showHomeTime ? 'bg-primary-500' : 'bg-cream-400'}`}
+            >
+              <div className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform
+                ${showHomeTime ? 'translate-x-5' : 'translate-x-0'}`}
+              />
+              <input
+                type="checkbox"
+                checked={showHomeTime}
+                onChange={(e) => setShowHomeTime(e.target.checked)}
+                className="sr-only"
+              />
+            </div>
+          </label>
         </div>
 
         {/* Actions */}

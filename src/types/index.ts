@@ -20,6 +20,12 @@ export interface TripMember {
   joinedAt: Timestamp
 }
 
+export interface TripTimezoneSettings {
+  homeTimezone: string // e.g., "America/Los_Angeles"
+  destinationTimezone: string // e.g., "Europe/Paris"
+  showHomeTime: boolean // Whether to display home time alongside destination time
+}
+
 export interface Trip {
   id: string
   name: string
@@ -35,6 +41,7 @@ export interface Trip {
   status: 'planning' | 'active' | 'completed'
   splitbiGroupId?: string // Optional Splitbi integration
   coverImageUrl?: string
+  timezoneSettings?: TripTimezoneSettings // Timezone management
 }
 
 export interface Proposal {

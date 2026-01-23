@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import type { Proposal } from '@/types'
+import type { Proposal, TripTimezoneSettings } from '@/types'
 import TimelineDay from './TimelineDay'
 import EmptyState from '@/components/ui/EmptyState'
 
@@ -7,6 +7,7 @@ interface TimelineViewProps {
   proposals: Proposal[]
   onProposalClick?: (proposalId: string) => void
   onExport?: () => void
+  timezoneSettings?: TripTimezoneSettings
 }
 
 interface DayGroup {
@@ -15,7 +16,7 @@ interface DayGroup {
   proposals: Proposal[]
 }
 
-export default function TimelineView({ proposals, onProposalClick, onExport }: TimelineViewProps) {
+export default function TimelineView({ proposals, onProposalClick, onExport, timezoneSettings }: TimelineViewProps) {
   // Filter to decided proposals with scheduled dates
   const timelineProposals = useMemo(() => {
     return proposals.filter(p => p.status === 'decided' && p.scheduledDate)
@@ -85,6 +86,7 @@ export default function TimelineView({ proposals, onProposalClick, onExport }: T
             date={date}
             proposals={proposals}
             onProposalClick={onProposalClick}
+            timezoneSettings={timezoneSettings}
           />
         ))}
       </div>

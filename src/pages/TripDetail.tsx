@@ -333,6 +333,7 @@ export default function TripDetailPage({
                 memberCount={trip.members.length}
                 onProposalClick={onProposalClick}
                 onCreateProposal={onCreateProposal}
+                timezoneSettings={trip.timezoneSettings}
               />
             </div>
           )}
@@ -373,6 +374,7 @@ export default function TripDetailPage({
               <TimelineView
                 proposals={proposals}
                 onProposalClick={onProposalClick}
+                timezoneSettings={trip.timezoneSettings}
               />
             </div>
           )}

@@ -1,4 +1,4 @@
-import type { Proposal } from '@/types'
+import type { Proposal, TripTimezoneSettings } from '@/types'
 import ProposalCard from './ProposalCard'
 import EmptyState from '@/components/ui/EmptyState'
 
@@ -10,6 +10,7 @@ interface ProposalListProps {
   loading?: boolean
   filterStatus?: Proposal['status'] | 'all'
   filterCategory?: Proposal['category'] | 'all'
+  timezoneSettings?: TripTimezoneSettings
 }
 
 export default function ProposalList({
@@ -20,6 +21,7 @@ export default function ProposalList({
   loading,
   filterStatus = 'all',
   filterCategory = 'all',
+  timezoneSettings,
 }: ProposalListProps) {
   if (loading) {
     return (
@@ -75,6 +77,7 @@ export default function ProposalList({
           proposal={proposal}
           memberCount={memberCount}
           onClick={() => onProposalClick(proposal.id)}
+          timezoneSettings={timezoneSettings}
         />
       ))}
     </div>

@@ -1,17 +1,23 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import Modal from '@/components/ui/Modal'
 import { useAuth } from '@/contexts/AuthContext'
 import { collection, addDoc, Timestamp } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
-import type { Proposal } from '@/types'
+import type { Proposal, TripTimezoneSettings } from '@/types'
 import { CategorySelector } from '@/features/proposals'
 import { getCategoryLabel } from '@/components/ui/CategoryIcon'
+import {
+  getTimezoneAbbreviation,
+  formatTimeInTimezone,
+  getTimezoneOption,
+} from '@/utils/timezone'
 
 interface CreateProposalModalProps {
   isOpen: boolean
   onClose: () => void
   tripId: string
   onProposalCreated: (proposalId: string) => void
+  timezoneSettings?: TripTimezoneSettings
 }
 
 export default function CreateProposalModal({
@@ -19,6 +25,7 @@ export default function CreateProposalModal({
   onClose,
   tripId,
   onProposalCreated,
+  timezoneSettings,
 }: CreateProposalModalProps) {
   const { user } = useAuth()
   const [step, setStep] = useState<'category' | 'details'>('category')
@@ -35,6 +42,38 @@ export default function CreateProposalModal({
 
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+
+  // Timezone info for display
+  const timezoneInfo = useMemo(() => {
+    if (!timezoneSettings) return null
+
+    const destOption = getTimezoneOption(timezoneSettings.destinationTimezone)
+    const destAbbr = getTimezoneAbbreviation(timezoneSettings.destinationTimezone)
+    const homeAbbr = getTimezoneAbbreviation(timezoneSettings.homeTimezone)
+
+    return {
+      destLabel: destOption?.label || timezoneSettings.destinationTimezone,
+      destAbbr,
+      homeAbbr,
+      showHomeTime: timezoneSettings.showHomeTime,
+    }
+  }, [timezoneSettings])
+
+  // Calculate home time equivalent when user enters a time
+  const homeTimeEquivalent = useMemo(() => {
+    if (!timezoneSettings?.showHomeTime || !scheduledDate || !scheduledTime) return null
+
+    try {
+      // Create a date in the destination timezone
+      const [hours, minutes] = scheduledTime.split(':').map(Number)
+      const date = new Date(scheduledDate)
+      date.setHours(hours, minutes, 0, 0)
+
+      return formatTimeInTimezone(date, timezoneSettings.homeTimezone)
+    } catch {
+      return null
+    }
+  }, [timezoneSettings, scheduledDate, scheduledTime])
 
   const resetForm = () => {
     setStep('category')
@@ -242,33 +281,56 @@ export default function CreateProposalModal({
           </div>
 
           {/* Date and Time */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label htmlFor="proposalDate" className="label">
-                Date <span className="text-primary-700/60 font-normal">(optional)</span>
-              </label>
-              <input
-                type="date"
-                id="proposalDate"
-                value={scheduledDate}
-                onChange={(e) => setScheduledDate(e.target.value)}
-                className="input"
-                disabled={loading}
-              />
+          <div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label htmlFor="proposalDate" className="label">
+                  Date <span className="text-primary-700/60 font-normal">(optional)</span>
+                </label>
+                <input
+                  type="date"
+                  id="proposalDate"
+                  value={scheduledDate}
+                  onChange={(e) => setScheduledDate(e.target.value)}
+                  className="input"
+                  disabled={loading}
+                />
+              </div>
+              <div>
+                <label htmlFor="proposalTime" className="label">
+                  Time <span className="text-primary-700/60 font-normal">(optional)</span>
+                  {timezoneInfo && (
+                    <span className="ml-1 text-xs text-primary-500">({timezoneInfo.destAbbr})</span>
+                  )}
+                </label>
+                <input
+                  type="time"
+                  id="proposalTime"
+                  value={scheduledTime}
+                  onChange={(e) => setScheduledTime(e.target.value)}
+                  className="input"
+                  disabled={loading}
+                />
+              </div>
             </div>
-            <div>
-              <label htmlFor="proposalTime" className="label">
-                Time <span className="text-primary-700/60 font-normal">(optional)</span>
-              </label>
-              <input
-                type="time"
-                id="proposalTime"
-                value={scheduledTime}
-                onChange={(e) => setScheduledTime(e.target.value)}
-                className="input"
-                disabled={loading}
-              />
-            </div>
+
+            {/* Timezone context */}
+            {timezoneInfo && (
+              <div className="mt-2 flex items-start gap-2 text-xs text-primary-700/60 dark:text-cream-400">
+                <svg className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                    d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <div>
+                  <span>Times are in {timezoneInfo.destLabel} ({timezoneInfo.destAbbr})</span>
+                  {homeTimeEquivalent && timezoneInfo.showHomeTime && (
+                    <span className="block mt-0.5 text-primary-500">
+                      = {homeTimeEquivalent} at home ({timezoneInfo.homeAbbr})
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Category-specific fields */}

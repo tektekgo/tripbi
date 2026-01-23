@@ -1,12 +1,14 @@
-import type { Proposal } from '@/types'
+import type { Proposal, TripTimezoneSettings } from '@/types'
 import CategoryIcon from '@/components/ui/CategoryIcon'
+import { TimeDisplayCompact } from '@/components/ui/TimeDisplay'
 
 interface TimelineItemProps {
   proposal: Proposal
   onClick?: () => void
+  timezoneSettings?: TripTimezoneSettings
 }
 
-export default function TimelineItem({ proposal, onClick }: TimelineItemProps) {
+export default function TimelineItem({ proposal, onClick, timezoneSettings }: TimelineItemProps) {
   const details = proposal.details as Record<string, string>
 
   return (
@@ -16,13 +18,18 @@ export default function TimelineItem({ proposal, onClick }: TimelineItemProps) {
         ${onClick ? 'cursor-pointer hover:bg-cream-200 dark:hover:bg-surface-dark-muted transition-colors' : ''}`}
     >
       {/* Time */}
-      <div className="w-16 flex-shrink-0 text-center">
-        {proposal.scheduledTime ? (
-          <span className="text-sm font-medium text-primary-700 dark:text-cream-100">
-            {proposal.scheduledTime}
-          </span>
+      <div className="w-24 flex-shrink-0">
+        {proposal.scheduledTime && proposal.scheduledDate ? (
+          <div className="text-center">
+            <TimeDisplayCompact
+              date={proposal.scheduledDate}
+              time={proposal.scheduledTime}
+              timezoneSettings={timezoneSettings}
+              className="text-sm font-medium text-primary-700 dark:text-cream-100"
+            />
+          </div>
         ) : (
-          <span className="text-sm text-primary-700/50">--:--</span>
+          <span className="text-sm text-primary-700/50 text-center block">--:--</span>
         )}
       </div>
 
