@@ -109,7 +109,7 @@ export default function Home({ onNavigate }: HomeProps) {
 
             {/* Creator attribution */}
             <p className="text-center text-xs text-primary-700/50 mt-8">
-              Created by Sujit{' '}
+              Created by Sujit •{' '}
               <a
                 href="https://www.ai-focus.org"
                 target="_blank"
