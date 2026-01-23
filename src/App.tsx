@@ -1,8 +1,12 @@
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import { AuthProvider, useAuth } from '@/contexts/AuthContext'
+import { ToastProvider } from '@/contexts/ToastContext'
 import { collection, query, where, onSnapshot, orderBy } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 import type { Trip, Proposal, Booking } from '@/types'
+
+// Components
+import ErrorBoundary from '@/components/ErrorBoundary'
 
 // Pages
 import Home from '@/pages/Home'
@@ -18,6 +22,7 @@ import CreateProposalModal from '@/components/modals/CreateProposalModal'
 import ProposalDetailModal from '@/components/modals/ProposalDetailModal'
 import InviteMemberModal from '@/components/modals/InviteMemberModal'
 import BookingModal from '@/components/modals/BookingModal'
+import TripSettingsModal from '@/components/modals/TripSettingsModal'
 
 // State-based routing - similar to SplitBi
 export type Screen = 'home' | 'dashboard' | 'trips' | 'trip-detail' | 'profile' | 'create' | 'invite' | 'shared-timeline'
@@ -42,6 +47,7 @@ function AppContent() {
   const [isCreateProposalModalOpen, setIsCreateProposalModalOpen] = useState(false)
   const [isInviteMemberModalOpen, setIsInviteMemberModalOpen] = useState(false)
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false)
+  const [isTripSettingsModalOpen, setIsTripSettingsModalOpen] = useState(false)
   const [viewingProposalId, setViewingProposalId] = useState<string | null>(null)
   const [bookingProposalId, setBookingProposalId] = useState<string | null>(null)
 
@@ -291,6 +297,7 @@ function AppContent() {
           onProposalClick={(proposalId) => setViewingProposalId(proposalId)}
           onInviteMembers={() => setIsInviteMemberModalOpen(true)}
           onMarkBooked={handleMarkBooked}
+          onOpenSettings={() => setIsTripSettingsModalOpen(true)}
         />
       )}
 
@@ -368,15 +375,29 @@ function AppContent() {
           existingBooking={existingBookingForProposal}
         />
       )}
+
+      {/* Trip Settings Modal */}
+      {activeTrip && (
+        <TripSettingsModal
+          isOpen={isTripSettingsModalOpen}
+          onClose={() => setIsTripSettingsModalOpen(false)}
+          trip={activeTrip}
+          onTripDeleted={goToTrips}
+        />
+      )}
     </div>
   )
 }
 
 function App() {
   return (
-    <AuthProvider>
-      <AppContent />
-    </AuthProvider>
+    <ErrorBoundary>
+      <AuthProvider>
+        <ToastProvider>
+          <AppContent />
+        </ToastProvider>
+      </AuthProvider>
+    </ErrorBoundary>
   )
 }
 
