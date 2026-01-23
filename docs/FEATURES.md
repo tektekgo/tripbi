@@ -18,6 +18,9 @@ This document describes all implemented features in TripBi as of the current rel
 7. [Member Invites](#7-member-invites)
 8. [Timezone Support](#8-timezone-support)
 9. [Trip Status & Filtering](#9-trip-status--filtering)
+10. [Trip Settings](#10-trip-settings)
+11. [Timeline Export & Sharing](#11-timeline-export--sharing)
+12. [Profile Page](#12-profile-page)
 
 ---
 
@@ -255,6 +258,82 @@ Filter proposals by day:
 
 ---
 
+## 10. Trip Settings
+
+### Accessing Trip Settings
+- Click the gear icon in the trip header
+- Only visible to trip members
+
+### Edit Trip Details
+- **Name**: Change the trip name
+- **Destination**: Update the destination
+- **Description**: Add or modify description
+- **Dates**: Adjust start and end dates
+- **Status**: Change between Planning, Active, Completed
+
+### Timezone Settings
+- **Home Timezone**: Set your home timezone
+- **Destination Timezone**: Set the destination timezone
+- **Show Home Time**: Toggle to display home time alongside destination time
+- **Time Difference**: Automatically calculated and displayed
+
+### Delete Trip
+- Only the trip creator (admin) can delete
+- Requires confirmation
+- Deletes all associated proposals, bookings, and invitations
+- **Warning**: This action cannot be undone
+
+---
+
+## 11. Timeline Export & Sharing
+
+### Export to PDF
+1. Go to the Timeline tab in your trip
+2. Click the "Export" button
+3. Preview your itinerary
+4. Click "Download PDF" to save
+
+**PDF includes:**
+- Trip name, destination, and dates
+- Day-by-day schedule
+- Times, categories, and descriptions
+- Location details for each item
+
+### Share Timeline Link
+Create a public, read-only link anyone can view without signing in:
+
+1. Click "Export" on the Timeline tab
+2. Click "Generate Shareable Link"
+3. Copy and share the link
+
+**Shareable link features:**
+- No sign-in required to view
+- Read-only (viewers cannot edit)
+- Shows trip name, destination, dates
+- Displays the full timeline with all decided items
+
+---
+
+## 12. Profile Page
+
+### Accessing Profile
+- Click "Profile" button in the header
+- Available when signed in
+
+### Profile Information
+- **Avatar**: Your Google profile picture
+- **Name**: Your display name
+- **Email**: Your email address (verified)
+- **Sign-in Method**: Shows Google authentication
+
+### Actions
+- **My Trips**: Navigate to your trips list
+- **Sign Out**: Log out of TripBi
+
+**Note**: Profile is currently read-only. Editing profile details is not yet available.
+
+---
+
 ## Feature Summary Table
 
 | Feature | Status | Privacy |
@@ -270,17 +349,21 @@ Filter proposals by day:
 | Timezone Support | ✅ | Group setting |
 | Day Filter | ✅ | Personal filter |
 | Trip Status | ✅ | Group visible |
+| Trip Settings | ✅ | Group visible (delete: admin only) |
+| Timeline Export | ✅ | Personal download |
+| Shareable Timeline | ✅ | **Public** - anyone with link |
+| Profile Page | ✅ | **Private** - only you see |
 
 ---
 
 ## Coming Soon
 
 - Splitbi integration for expense tracking
-- Export timeline to PDF
 - Push notifications
-- Trip settings (edit, delete, leave)
-- Profile/settings page
+- Leave trip (for non-admin members)
+- Member role management (admin/member permissions)
 - Trip cover image upload
+- Edit profile (change display name, photo)
 
 ---
 

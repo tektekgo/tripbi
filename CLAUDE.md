@@ -166,16 +166,25 @@ sharedTimelines/{token}
 ### Commands
 
 ```bash
-# Development
+# Local Development
 npm run dev                    # Start dev server (localhost:5173)
-npm run build                  # Production build
 npm run lint                   # ESLint
 npx tsc --noEmit              # Type check
+npm run test                   # Run unit tests (vitest)
+npm run test:run              # Run tests once (CI mode)
 
-# Firebase Hosting & Firestore
+# Build (IMPORTANT: use correct mode!)
+npm run build                  # Production build (uses .env.production)
+npm run build:dev             # Development build (uses .env.development)
+
+# Deploy (RECOMMENDED - use these!)
+npm run deploy:dev            # Build + deploy to tripbi-dev
+npm run deploy:prod           # Build + deploy to tripbi-prod
+
+# Manual Firebase Deploy (only if needed)
+npx firebase deploy --only hosting            # Deploy app (after build)
 npx firebase deploy --only firestore:rules    # Deploy security rules
 npx firebase deploy --only firestore:indexes  # Deploy indexes
-npx firebase deploy --only hosting            # Deploy app
 npx firebase emulators:start                  # Local emulators
 
 # Cloud Functions
@@ -185,6 +194,37 @@ npx firebase deploy --only functions          # Deploy functions
 # Set Resend API Key (required for email invites)
 npx firebase functions:secrets:set RESEND_API_KEY
 ```
+
+### Daily Developer Workflow
+
+**IMPORTANT:** Always use the correct deploy command for the target environment!
+
+1. **Local Development:**
+   ```bash
+   npm run dev                  # Runs on localhost:5173, uses .env.development
+   ```
+
+2. **Deploy to Dev (tripbi-dev.web.app):**
+   ```bash
+   npm run deploy:dev           # Builds with .env.development, deploys to tripbi-dev
+   ```
+
+3. **Deploy to Prod (tripbi.app):** *(when ready)*
+   ```bash
+   npm run deploy:prod          # Builds with .env.production, deploys to tripbi-prod
+   ```
+
+**Common Mistake:** Running `npm run build` then `npx firebase deploy` will use production config (placeholder values) and break the dev site. Always use `npm run deploy:dev` for dev deployments.
+
+### Environment Files
+
+| File | Purpose | Used By |
+|------|---------|---------|
+| `.env.development` | tripbi-dev Firebase config | `npm run dev`, `npm run deploy:dev` |
+| `.env.production` | tripbi-prod Firebase config | `npm run deploy:prod` |
+| `.env.example` | Template for required variables | Reference only |
+
+**Note:** `.env.development` contains real API keys for tripbi-dev. `.env.production` has placeholders until tripbi-prod is set up.
 
 ### Key Files
 
@@ -253,30 +293,43 @@ type Screen = 'home' | 'dashboard' | 'trips' | 'trip-detail' | 'profile' | 'crea
 
 ## Environment Setup
 
-### Deployment Steps (for email invites)
+### Initial Setup (One-time)
 
-1. **Set up Resend API Key as Firebase Secret:**
+1. **Install dependencies:**
+   ```bash
+   npm install
+   cd functions && npm install && cd ..
+   ```
+
+2. **Set up Resend API Key as Firebase Secret:**
    ```bash
    npx firebase functions:secrets:set RESEND_API_KEY
    # Enter your Resend API key when prompted
    ```
 
-2. **Deploy Cloud Functions:**
+3. **Deploy Cloud Functions:**
    ```bash
    cd functions && npm run build
    npx firebase deploy --only functions
    ```
 
-3. **Deploy Firestore rules (if not already deployed):**
+4. **Deploy Firestore rules and indexes:**
    ```bash
    npx firebase deploy --only firestore:rules
+   npx firebase deploy --only firestore:indexes
    ```
 
-4. **Deploy the app:**
-   ```bash
-   npm run build
-   npx firebase deploy --only hosting
-   ```
+### Regular Deployment
+
+**For tripbi-dev (development):**
+```bash
+npm run deploy:dev
+```
+
+**For tripbi-prod (production):** *(when ready)*
+```bash
+npm run deploy:prod
+```
 
 ### Resend Email Configuration
 
@@ -287,16 +340,14 @@ The email function sends from `invite@mail.tripbi.app`. Domain setup:
 
 **Note:** The shareable link option works without email - users can copy the link and share via any channel.
 
-### Firebase Project: tripbi-dev
+### Firebase Projects
 
-```
-Project ID: tripbi-dev
-Auth Domain: tripbi-dev.firebaseapp.com
-Storage Bucket: tripbi-dev.firebasestorage.app
+| Environment | Project ID | Hosting URL | Config File |
+|-------------|------------|-------------|-------------|
+| Development | tripbi-dev | tripbi-dev.web.app | `.env.development` |
+| Production | tripbi-prod | tripbi.app | `.env.production` |
 
-# API keys and other secrets are in .env.development (not committed to git)
-# See .env.example for the required environment variables
-```
+**Note:** API keys and secrets are stored in `.env.*` files (not committed to git). See `.env.example` for required variables.
 
 ---
 

@@ -10,8 +10,7 @@ import {
   onAuthStateChanged,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
-  signInWithRedirect,
-  getRedirectResult,
+  signInWithPopup,
   GoogleAuthProvider,
   signOut as firebaseSignOut,
   updateProfile,
@@ -52,19 +51,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
+  // Listen to auth state changes
   useEffect(() => {
-    // Handle redirect result on page load
-    getRedirectResult(auth)
-      .then((result) => {
-        if (result?.user) {
-          setUser(mapFirebaseUser(result.user))
-        }
-      })
-      .catch((err) => {
-        console.error('Redirect sign-in error:', err)
-        setError(err instanceof Error ? err.message : 'Sign-in failed')
-      })
-
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
       if (firebaseUser) {
         setUser(mapFirebaseUser(firebaseUser))
@@ -114,15 +102,16 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const signInWithGoogle = async () => {
     try {
       setError(null)
-      setLoading(true)
-      // Use redirect instead of popup to avoid COOP issues
-      await signInWithRedirect(auth, googleProvider)
-      // Note: The page will redirect, so the code below won't execute immediately
-      // The redirect result is handled in the useEffect above
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to sign in with Google'
-      setError(message)
-      setLoading(false)
+      // Use popup for reliable sign-in (same as SplitBi)
+      await signInWithPopup(auth, googleProvider)
+      // onAuthStateChanged will handle updating the user state
+    } catch (err: unknown) {
+      const firebaseError = err as { code?: string; message?: string }
+      // Don't show error if user closed the popup
+      if (firebaseError.code !== 'auth/popup-closed-by-user') {
+        const message = firebaseError.message || 'Failed to sign in with Google'
+        setError(message)
+      }
       throw err
     }
   }
