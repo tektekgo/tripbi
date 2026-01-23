@@ -10,7 +10,8 @@ import {
   onAuthStateChanged,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
-  signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
   GoogleAuthProvider,
   signOut as firebaseSignOut,
   updateProfile,
@@ -52,6 +53,18 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
+    // Handle redirect result on page load
+    getRedirectResult(auth)
+      .then((result) => {
+        if (result?.user) {
+          setUser(mapFirebaseUser(result.user))
+        }
+      })
+      .catch((err) => {
+        console.error('Redirect sign-in error:', err)
+        setError(err instanceof Error ? err.message : 'Sign-in failed')
+      })
+
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
       if (firebaseUser) {
         setUser(mapFirebaseUser(firebaseUser))
@@ -102,13 +115,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
     try {
       setError(null)
       setLoading(true)
-      await signInWithPopup(auth, googleProvider)
+      // Use redirect instead of popup to avoid COOP issues
+      await signInWithRedirect(auth, googleProvider)
+      // Note: The page will redirect, so the code below won't execute immediately
+      // The redirect result is handled in the useEffect above
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to sign in with Google'
       setError(message)
-      throw err
-    } finally {
       setLoading(false)
+      throw err
     }
   }
 

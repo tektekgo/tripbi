@@ -41,6 +41,41 @@ function formatDateRange(startDate: Timestamp, endDate: Timestamp): string {
   return `${startMonth} ${startDay} - ${endMonth} ${endDay}, ${year}`
 }
 
+// Generate array of trip days for filtering
+function getTripDays(startDate: Timestamp, endDate: Timestamp): { date: Date; label: string; dateKey: string }[] {
+  const days: { date: Date; label: string; dateKey: string }[] = []
+  const start = new Date(startDate.toDate())
+  const end = new Date(endDate.toDate())
+
+  // Reset to start of day
+  start.setHours(0, 0, 0, 0)
+  end.setHours(0, 0, 0, 0)
+
+  const current = new Date(start)
+  let dayNum = 1
+
+  while (current <= end) {
+    const dayOfWeek = current.toLocaleDateString('en-US', { weekday: 'short' })
+    const monthDay = current.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+    days.push({
+      date: new Date(current),
+      label: `Day ${dayNum} (${dayOfWeek}, ${monthDay})`,
+      dateKey: current.toISOString().split('T')[0],
+    })
+    current.setDate(current.getDate() + 1)
+    dayNum++
+  }
+
+  return days
+}
+
+// Status badge styles
+const statusStyles = {
+  planning: { bg: 'bg-warning-100', text: 'text-warning-700', label: 'Planning' },
+  active: { bg: 'bg-success-100', text: 'text-success-700', label: 'Active' },
+  completed: { bg: 'bg-primary-100', text: 'text-primary-700', label: 'Completed' },
+}
+
 export default function TripDetailPage({
   trip,
   proposals,
@@ -56,11 +91,28 @@ export default function TripDetailPage({
   const { user } = useAuth()
   const [activeTab, setActiveTab] = useState<TripTab>('proposals')
   const [showExport, setShowExport] = useState(false)
+  const [selectedDay, setSelectedDay] = useState<string>('all')
+
+  // Get trip days for filtering
+  const tripDays = useMemo(() => getTripDays(trip.startDate, trip.endDate), [trip.startDate, trip.endDate])
 
   // Derived data
   const decidedProposals = useMemo(() => {
     return proposals.filter(p => p.status === 'decided')
   }, [proposals])
+
+  // Filter proposals by selected day
+  const filteredProposals = useMemo(() => {
+    if (selectedDay === 'all') return proposals
+    if (selectedDay === 'unscheduled') {
+      return proposals.filter(p => !p.scheduledDate)
+    }
+    return proposals.filter(p => {
+      if (!p.scheduledDate) return false
+      const proposalDate = p.scheduledDate.toDate().toISOString().split('T')[0]
+      return proposalDate === selectedDay
+    })
+  }, [proposals, selectedDay])
 
   const memberUsers = trip.memberDetails.map(m => ({
     photoURL: null,
@@ -123,9 +175,14 @@ export default function TripDetailPage({
         <div className="max-w-6xl mx-auto">
           <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
             <div>
-              <h1 className="text-2xl font-bold text-primary-700 dark:text-cream-100">
-                {trip.name}
-              </h1>
+              <div className="flex items-center gap-3">
+                <h1 className="text-2xl font-bold text-primary-700 dark:text-cream-100">
+                  {trip.name}
+                </h1>
+                <span className={`px-3 py-1 rounded-full text-xs font-medium ${statusStyles[trip.status].bg} ${statusStyles[trip.status].text}`}>
+                  {statusStyles[trip.status].label}
+                </span>
+              </div>
               <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mt-2 text-sm text-primary-700/70">
                 <span className="flex items-center gap-1.5">
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -219,20 +276,52 @@ export default function TripDetailPage({
           {/* Proposals Tab */}
           {activeTab === 'proposals' && (
             <div>
-              <div className="flex justify-between items-center mb-6">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
                 <h2 className="text-lg font-semibold text-primary-700">
                   Trip Proposals
                 </h2>
-                <button onClick={onCreateProposal} className="btn-primary btn-sm">
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                  </svg>
-                  Add Proposal
-                </button>
+                <div className="flex items-center gap-3 w-full sm:w-auto">
+                  {/* Day Filter */}
+                  <select
+                    value={selectedDay}
+                    onChange={(e) => setSelectedDay(e.target.value)}
+                    className="input py-2 px-4 text-sm flex-1 sm:flex-none sm:w-48"
+                  >
+                    <option value="all">All Days</option>
+                    <option value="unscheduled">Unscheduled</option>
+                    {tripDays.map((day) => (
+                      <option key={day.dateKey} value={day.dateKey}>
+                        {day.label}
+                      </option>
+                    ))}
+                  </select>
+                  <button onClick={onCreateProposal} className="btn-primary btn-sm whitespace-nowrap">
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                    </svg>
+                    Add Proposal
+                  </button>
+                </div>
               </div>
 
+              {/* Show filter info */}
+              {selectedDay !== 'all' && (
+                <div className="mb-4 flex items-center gap-2 text-sm text-primary-700/70">
+                  <span>
+                    Showing {filteredProposals.length} of {proposals.length} proposals
+                    {selectedDay === 'unscheduled' ? ' (unscheduled)' : ` for ${tripDays.find(d => d.dateKey === selectedDay)?.label || selectedDay}`}
+                  </span>
+                  <button
+                    onClick={() => setSelectedDay('all')}
+                    className="text-primary-500 hover:text-primary-600 underline"
+                  >
+                    Clear filter
+                  </button>
+                </div>
+              )}
+
               <ProposalList
-                proposals={proposals}
+                proposals={filteredProposals}
                 memberCount={trip.members.length}
                 onProposalClick={onProposalClick}
                 onCreateProposal={onCreateProposal}

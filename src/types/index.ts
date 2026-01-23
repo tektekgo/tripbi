@@ -53,11 +53,19 @@ export interface Proposal {
   scheduledTime?: string
   votes: Vote[]
   comments: Comment[]
+  reactions?: Reaction[] // Personal reactions (private to each user)
 }
 
 export interface Vote {
   userId: string
   vote: 'yes' | 'no' | 'abstain'
+  timestamp: Timestamp
+}
+
+// Personal reaction (private to each user, not visible to group)
+export interface Reaction {
+  userId: string
+  reaction: 'interested' | 'maybe' | 'not_interested'
   timestamp: Timestamp
 }
 
