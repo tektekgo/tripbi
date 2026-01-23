@@ -17,7 +17,9 @@ type ReactionType = Reaction['reaction']
 function formatDate(timestamp: Timestamp | undefined): string {
   if (!timestamp) return ''
   const date = timestamp.toDate()
-  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+  const dayOfWeek = date.toLocaleDateString('en-US', { weekday: 'short' })
+  const monthDay = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+  return `${dayOfWeek}, ${monthDay}`
 }
 
 function getVoteSummary(votes: Proposal['votes']): { yes: number; no: number; abstain: number } {

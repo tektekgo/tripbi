@@ -41,13 +41,21 @@ function formatDateRange(startDate: Timestamp, endDate: Timestamp): string {
   return `${startMonth} ${startDay} - ${endMonth} ${endDay}, ${year}`
 }
 
+// Helper to get local date key (YYYY-MM-DD in local timezone)
+function getLocalDateKey(date: Date): string {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
 // Generate array of trip days for filtering
 function getTripDays(startDate: Timestamp, endDate: Timestamp): { date: Date; label: string; dateKey: string }[] {
   const days: { date: Date; label: string; dateKey: string }[] = []
   const start = new Date(startDate.toDate())
   const end = new Date(endDate.toDate())
 
-  // Reset to start of day
+  // Reset to start of day in local timezone
   start.setHours(0, 0, 0, 0)
   end.setHours(0, 0, 0, 0)
 
@@ -60,7 +68,7 @@ function getTripDays(startDate: Timestamp, endDate: Timestamp): { date: Date; la
     days.push({
       date: new Date(current),
       label: `Day ${dayNum} (${dayOfWeek}, ${monthDay})`,
-      dateKey: current.toISOString().split('T')[0],
+      dateKey: getLocalDateKey(current), // Use local date key instead of ISO
     })
     current.setDate(current.getDate() + 1)
     dayNum++
@@ -109,7 +117,7 @@ export default function TripDetailPage({
     }
     return proposals.filter(p => {
       if (!p.scheduledDate) return false
-      const proposalDate = p.scheduledDate.toDate().toISOString().split('T')[0]
+      const proposalDate = getLocalDateKey(p.scheduledDate.toDate())
       return proposalDate === selectedDay
     })
   }, [proposals, selectedDay])
