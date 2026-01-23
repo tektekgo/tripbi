@@ -1,0 +1,73 @@
+# TripBi Project Rules
+
+## CRITICAL: Session Context
+- **ALWAYS read `PROJECT_STATE.md` at the start of any session**
+- This file contains all architectural decisions, current status, and next steps
+- Do NOT re-debate decisions marked as "Locked" in that file
+- Update `PROJECT_STATE.md` when significant progress is made or decisions are finalized
+
+## Project Context
+TripBi is a group trip planning platform built with React, TypeScript, and Firebase.
+Users coordinate travel plans through proposals, voting, and booking tracking.
+Optional integration with Splitbi for expense tracking.
+
+## Tech Stack (Locked Decisions)
+- Frontend: React 19, TypeScript 5.8, Vite 6.2, Tailwind CSS
+- Backend: Firebase (Firestore, Auth, Functions, Storage, Hosting)
+- Mobile: Capacitor (Android first, then iOS)
+- Email: Resend
+- CI/CD: GitHub Actions
+
+## Code Style & Patterns
+
+### TypeScript
+- Use strict TypeScript configuration
+- Prefer interfaces over types for object shapes
+- Export types alongside components
+- Use enums for fixed value sets (ProposalStatus, VoteType)
+
+### React Patterns
+- Use functional components with hooks
+- Prefer named exports for components
+- Use custom hooks for Firebase interactions
+- Co-locate component files with their tests
+
+### Firebase Patterns
+- Always unsubscribe from Firestore listeners in useEffect cleanup
+- Use Firebase Timestamp for dates (not JavaScript Date)
+- Batch writes when updating multiple documents
+- Use subcollections for one-to-many relationships
+
+### File Organization
+- Feature-based structure: features/[feature]/{components,hooks,types,utils}
+- Shared components in components/{ui,layout,shared}
+- Types in types/ folder with feature-specific types in feature folders
+
+### Styling
+- Use Tailwind utility classes
+- Use Tailwind's responsive prefixes (sm:, md:, lg:)
+- Minimum 44x44px touch targets for mobile
+
+### Security
+- Never commit .env files
+- Use environment variables for all API keys
+- Validate user input before Firestore writes
+- API keys for external services go in Cloud Functions only (never client-side)
+
+## Naming Conventions
+- Components: PascalCase (TripCard.tsx)
+- Hooks: camelCase with "use" prefix (useTrip.ts)
+- Utils: camelCase (formatDate.ts)
+- Types: PascalCase (TripData, ProposalStatus)
+- Constants: SCREAMING_SNAKE_CASE (MAX_TRIP_MEMBERS)
+
+## Environment Strategy
+- Development: tripbi-dev Firebase project, dev branch
+- Production: tripbi-prod Firebase project, main branch
+- All config via environment variables with placeholders for initial development
+
+## Mobile Considerations
+- Design mobile-first
+- Use safe-area-inset CSS variables for notches
+- Test touch interactions
+- Prepare for both Android and iOS from the start

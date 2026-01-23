@@ -1,0 +1,422 @@
+/* Import Inter font */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ============================================
+   CSS Variables - TripBi Design System
+   ============================================ */
+
+@layer base {
+  :root {
+    /* Surface colors - Light mode (Pi-inspired warm cream) */
+    --color-surface: 245 240 232;           /* #F5F0E8 - warm cream */
+    --color-surface-elevated: 253 252 250;  /* #FDFCFA - lighter cream */
+    --color-surface-muted: 237 229 216;     /* #EDE5D8 - tan */
+    --color-border: 212 201 184;            /* #D4C9B8 - darker cream */
+
+    /* Text colors - Light mode */
+    --color-text-primary: 29 71 57;         /* #1D4739 - forest green */
+    --color-text-secondary: 74 69 64;       /* #4A4540 - warm gray */
+    --color-text-muted: 149 139 122;        /* #958B7A - muted */
+
+    /* Primary - Forest Green (Pi style) */
+    --color-primary: 45 90 74;              /* #2D5A4A */
+    --color-primary-hover: 29 71 57;        /* #1D4739 */
+    --color-primary-light: 209 240 230;     /* light green tint */
+
+    /* Semantic colors */
+    --color-success: 45 90 74;              /* forest green */
+    --color-warning: 245 158 11;            /* brand orange */
+    --color-error: 239 83 80;               /* brand coral */
+    --color-info: 59 130 246;               /* brand blue */
+  }
+
+  .dark {
+    /* Surface colors - Dark mode (forest green based) */
+    --color-surface: 29 71 57;              /* #1D4739 - forest green */
+    --color-surface-elevated: 38 77 63;     /* #264D3F */
+    --color-surface-muted: 22 58 46;        /* #163A2E */
+    --color-border: 61 175 130;             /* #3DAF82 - accent */
+
+    /* Text colors - Dark mode */
+    --color-text-primary: 245 240 232;      /* cream */
+    --color-text-secondary: 209 240 230;    /* light green */
+    --color-text-muted: 163 225 205;        /* muted green */
+
+    /* Primary - Lighter green for dark mode */
+    --color-primary: 110 203 168;           /* #6ECBA8 */
+    --color-primary-hover: 163 225 205;     /* lighter */
+    --color-primary-light: 22 58 46;        /* dark green bg */
+  }
+
+  /* Base HTML/Body styling */
+  html {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    background-color: rgb(var(--color-surface));
+    color: rgb(var(--color-text-primary));
+    transition: background-color 0.2s ease, color 0.2s ease;
+  }
+
+  /* Focus styles for accessibility */
+  *:focus-visible {
+    @apply outline-none ring-2 ring-primary-500 ring-offset-2;
+    --tw-ring-offset-color: #F5F0E8;
+  }
+
+  .dark *:focus-visible {
+    --tw-ring-offset-color: #1D4739;
+  }
+}
+
+/* ============================================
+   Utility Classes
+   ============================================ */
+
+@layer utilities {
+  /* Safe area insets for mobile devices with notches */
+  .safe-top {
+    padding-top: env(safe-area-inset-top);
+  }
+
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .safe-left {
+    padding-left: env(safe-area-inset-left);
+  }
+
+  .safe-right {
+    padding-right: env(safe-area-inset-right);
+  }
+
+  .safe-x {
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+
+  .safe-y {
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  /* Minimum touch target size (44x44px for iOS, 48x48 for Android) */
+  .touch-target {
+    @apply min-h-[44px] min-w-[44px];
+  }
+
+  /* Text balance for better typography */
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  /* Hide scrollbar but keep functionality */
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* ============================================
+   Component Styles
+   ============================================ */
+
+@layer components {
+  /* Buttons */
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg font-medium
+           transition-all duration-200 ease-out
+           focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2
+           disabled:opacity-50 disabled:cursor-not-allowed
+           touch-target select-none;
+  }
+
+  .btn-sm {
+    @apply px-3 py-1.5 text-sm min-h-[36px];
+  }
+
+  .btn-md {
+    @apply px-4 py-2.5 text-sm min-h-[44px];
+  }
+
+  .btn-lg {
+    @apply px-6 py-3 text-base min-h-[52px];
+  }
+
+  .btn-primary {
+    @apply btn btn-md rounded-full
+           bg-primary-500 text-cream-100
+           hover:bg-primary-700 active:bg-primary-800
+           focus-visible:ring-primary-500
+           dark:bg-primary-400 dark:hover:bg-primary-300 dark:active:bg-primary-200
+           dark:text-primary-900;
+  }
+
+  .btn-secondary {
+    @apply btn btn-md rounded-full
+           bg-cream-300 text-primary-700
+           hover:bg-cream-400 active:bg-cream-500
+           focus-visible:ring-primary-500
+           dark:bg-surface-dark-muted dark:text-cream-200
+           dark:hover:bg-surface-dark-elevated dark:active:bg-surface-dark;
+  }
+
+  .btn-outline {
+    @apply btn btn-md rounded-full
+           border-2 border-primary-500 text-primary-500 bg-transparent
+           hover:bg-cream-200 active:bg-cream-300
+           focus-visible:ring-primary-500
+           dark:border-primary-400 dark:text-primary-400
+           dark:hover:bg-primary-900 dark:active:bg-primary-800;
+  }
+
+  .btn-ghost {
+    @apply btn btn-md
+           text-secondary-600 bg-transparent
+           hover:bg-secondary-100 active:bg-secondary-200
+           focus-visible:ring-secondary-500
+           dark:text-secondary-300
+           dark:hover:bg-secondary-800 dark:active:bg-secondary-700;
+  }
+
+  .btn-danger {
+    @apply btn btn-md
+           bg-error-500 text-white
+           hover:bg-error-600 active:bg-error-700
+           focus-visible:ring-error-500;
+  }
+
+  /* Inputs - Pi style rounded */
+  .input {
+    @apply block w-full rounded-full px-5 py-3.5 text-base
+           bg-cream-100 text-primary-800
+           border border-cream-400
+           placeholder:text-cream-600
+           focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 focus:outline-none
+           disabled:opacity-50 disabled:cursor-not-allowed
+           touch-target transition-colors duration-200
+           dark:bg-surface-dark-elevated dark:text-cream-100
+           dark:border-surface-dark-border
+           dark:placeholder:text-cream-600
+           dark:focus:border-primary-400 dark:focus:ring-primary-400/20;
+  }
+
+  /* Standard rounded input (for multiline, etc) */
+  .input-rounded {
+    @apply block w-full rounded-2xl px-5 py-3.5 text-base
+           bg-cream-100 text-primary-800
+           border border-cream-400
+           placeholder:text-cream-600
+           focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 focus:outline-none
+           disabled:opacity-50 disabled:cursor-not-allowed
+           touch-target transition-colors duration-200;
+  }
+
+  .input-error {
+    @apply border-error-500 focus:border-error-500 focus:ring-error-500
+           dark:border-error-400 dark:focus:border-error-400 dark:focus:ring-error-400;
+  }
+
+  .label {
+    @apply block text-sm font-medium text-secondary-700 mb-1.5
+           dark:text-secondary-300;
+  }
+
+  .helper-text {
+    @apply text-sm text-secondary-500 mt-1.5
+           dark:text-secondary-400;
+  }
+
+  .error-text {
+    @apply text-sm text-error-500 mt-1.5
+           dark:text-error-400;
+  }
+
+  /* Cards - Pi style beige/cream */
+  .card {
+    @apply bg-cream-300 rounded-2xl p-6
+           border-0
+           dark:bg-surface-dark-elevated;
+  }
+
+  .card-elevated {
+    @apply bg-cream-100 rounded-2xl p-6
+           shadow-sm
+           dark:bg-surface-dark-elevated dark:shadow-dark-sm;
+  }
+
+  .card-interactive {
+    @apply card cursor-pointer
+           hover:bg-cream-400
+           active:scale-[0.98]
+           transition-all duration-200
+           dark:hover:bg-surface-dark-muted;
+  }
+
+  /* Badges */
+  .badge {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+  }
+
+  .badge-primary {
+    @apply badge bg-primary-100 text-primary-700
+           dark:bg-primary-900 dark:text-primary-300;
+  }
+
+  .badge-success {
+    @apply badge bg-success-100 text-success-700
+           dark:bg-success-900 dark:text-success-300;
+  }
+
+  .badge-warning {
+    @apply badge bg-warning-100 text-warning-700
+           dark:bg-warning-900 dark:text-warning-300;
+  }
+
+  .badge-error {
+    @apply badge bg-error-100 text-error-700
+           dark:bg-error-900 dark:text-error-300;
+  }
+
+  .badge-info {
+    @apply badge bg-info-100 text-info-700
+           dark:bg-info-900 dark:text-info-300;
+  }
+
+  /* Status indicators (for proposals, bookings, etc.) */
+  .status-proposed {
+    @apply badge bg-secondary-100 text-secondary-700
+           dark:bg-secondary-800 dark:text-secondary-300;
+  }
+
+  .status-discussing {
+    @apply badge bg-warning-100 text-warning-700
+           dark:bg-warning-900 dark:text-warning-300;
+  }
+
+  .status-decided {
+    @apply badge bg-success-100 text-success-700
+           dark:bg-success-900 dark:text-success-300;
+  }
+
+  .status-pending {
+    @apply badge bg-warning-100 text-warning-700
+           dark:bg-warning-900 dark:text-warning-300;
+  }
+
+  .status-confirmed {
+    @apply badge bg-success-100 text-success-700
+           dark:bg-success-900 dark:text-success-300;
+  }
+
+  /* Avatar */
+  .avatar {
+    @apply inline-flex items-center justify-center rounded-full bg-primary-100 text-primary-700 font-medium
+           dark:bg-primary-900 dark:text-primary-300;
+  }
+
+  .avatar-sm {
+    @apply avatar w-8 h-8 text-xs;
+  }
+
+  .avatar-md {
+    @apply avatar w-10 h-10 text-sm;
+  }
+
+  .avatar-lg {
+    @apply avatar w-12 h-12 text-base;
+  }
+
+  /* Divider */
+  .divider {
+    @apply border-t border-surface-light-border
+           dark:border-surface-dark-border;
+  }
+
+  /* Loading spinner */
+  .spinner {
+    @apply animate-spin rounded-full border-2 border-current border-t-transparent;
+  }
+
+  .spinner-sm {
+    @apply spinner w-4 h-4;
+  }
+
+  .spinner-md {
+    @apply spinner w-6 h-6;
+  }
+
+  .spinner-lg {
+    @apply spinner w-8 h-8;
+  }
+
+  /* Page container */
+  .page-container {
+    @apply min-h-screen;
+    background-color: rgb(var(--color-surface));
+  }
+
+  /* Content container */
+  .content-container {
+    @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+  }
+
+  /* Section */
+  .section {
+    @apply py-8 sm:py-12;
+  }
+
+  /* Header styles */
+  .page-header {
+    @apply safe-top;
+    background-color: rgb(var(--color-surface-elevated));
+    border-bottom: 1px solid rgb(var(--color-border));
+  }
+}
+
+/* ============================================
+   Scrollbar Styling (optional, for webkit)
+   ============================================ */
+
+@layer utilities {
+  /* Custom scrollbar for light mode */
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-track {
+    @apply bg-surface-light-muted rounded-full;
+  }
+
+  .dark .custom-scrollbar::-webkit-scrollbar-track {
+    @apply bg-surface-dark-muted;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    @apply bg-secondary-300 rounded-full;
+  }
+
+  .dark .custom-scrollbar::-webkit-scrollbar-thumb {
+    @apply bg-secondary-600;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    @apply bg-secondary-400;
+  }
+
+  .dark .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    @apply bg-secondary-500;
+  }
+}

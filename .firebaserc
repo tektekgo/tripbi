@@ -1,0 +1,7 @@
+{
+  "projects": {
+    "dev": "tripbi-dev",
+    "prod": "tripbi-prod",
+    "default": "tripbi-dev"
+  }
+}

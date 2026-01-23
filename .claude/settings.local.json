@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install)",
+      "Bash(npm run build:*)",
+      "Bash(npm run build:no-bump:*)",
+      "Bash(firebase --version:*)",
+      "Bash(dir \"C:\\\\Repos\\\\personal_gsujit\\\\github_jisujit_tektekgo\\\\splitbi\\\\docs\" /s /b)",
+      "Bash(npx tsc:*)",
+      "Bash(npm run lint)",
+      "Bash(npx firebase deploy:*)",
+      "Bash(npx firebase:*)"
+    ]
+  }
+}
