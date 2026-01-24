@@ -158,7 +158,7 @@ export default function ProfilePage({ onNavigate, onBack, tripCount = 0 }: Profi
 
           {/* Privacy Policy */}
           <a
-            href="https://tripbi.app/privacy"
+            href="/privacy.html"
             target="_blank"
             rel="noopener noreferrer"
             className="w-full flex items-center justify-between py-4 px-1 text-primary-700 hover:bg-cream-300/50 rounded-lg transition-colors"
@@ -176,7 +176,7 @@ export default function ProfilePage({ onNavigate, onBack, tripCount = 0 }: Profi
 
           {/* Terms of Service */}
           <a
-            href="https://tripbi.app/terms"
+            href="/terms.html"
             target="_blank"
             rel="noopener noreferrer"
             className="w-full flex items-center justify-between py-4 px-1 text-primary-700 hover:bg-cream-300/50 rounded-lg transition-colors"
