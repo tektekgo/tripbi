@@ -75,7 +75,7 @@ export default function ProfilePage({ onNavigate, onBack, tripCount = 0 }: Profi
 
           {/* Fun stat message - Pi style */}
           <div className="text-center mb-8">
-            <p className="text-2xl font-serif text-primary-700 leading-relaxed">
+            <p className="text-2xl font-semibold text-primary-700 leading-relaxed">
               {getFunMessage()}
             </p>
           </div>
