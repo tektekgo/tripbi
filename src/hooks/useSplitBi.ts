@@ -98,11 +98,24 @@ export function useSplitBi(trip: Trip | null): UseSplitBiResult {
       setError(null)
 
       try {
+        // Get creator email from memberDetails
+        const creator = tripToLink.memberDetails.find(m => m.userId === tripToLink.createdBy)
+        if (!creator?.email) {
+          setError('Creator email not found')
+          return null
+        }
+
+        // Build members array with emails and display names
+        const members = tripToLink.memberDetails.map(m => ({
+          email: m.email,
+          displayName: m.displayName || undefined,
+        }))
+
         const result = await splitbiApi.createGroup({
           name: `${tripToLink.name} Expenses`,
           currency,
-          creatorUserId: tripToLink.createdBy,
-          memberUserIds: tripToLink.members,
+          creatorEmail: creator.email,
+          members,
           externalId: tripToLink.id,
           externalSource: 'tripbi',
         })
@@ -138,7 +151,13 @@ export function useSplitBi(trip: Trip | null): UseSplitBiResult {
       setError(null)
 
       try {
-        await splitbiApi.addMembers(groupId, tripToSync.members)
+        // Build members array with emails and display names
+        const members = tripToSync.memberDetails.map(m => ({
+          email: m.email,
+          displayName: m.displayName || undefined,
+        }))
+
+        await splitbiApi.addMembers(groupId, members)
         // Refresh summary to show updated member count
         await fetchSummary()
       } catch (err) {

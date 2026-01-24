@@ -28,6 +28,7 @@ export interface SplitBiErrorResponse {
 
 export interface MemberBalanceInfo {
   userId: string
+  email: string
   displayName: string
   balance: number // Positive = owed money, Negative = owes money
   totalPaid: number
@@ -75,11 +76,16 @@ export interface GroupSummary {
   lastUpdated: string
 }
 
+export interface MemberInfo {
+  email: string
+  displayName?: string
+}
+
 export interface CreateGroupRequest {
   name: string
   currency: string
-  creatorUserId: string
-  memberUserIds: string[]
+  creatorEmail: string
+  members: MemberInfo[]
   externalId?: string
   externalSource?: string
 }
@@ -206,11 +212,11 @@ export const splitbiApi = {
    */
   async addMembers(
     groupId: string,
-    memberUserIds: string[]
+    members: MemberInfo[]
   ): Promise<{ addedCount: number; skippedCount: number; newMemberCount: number }> {
     return apiRequest(`/v1/groups/${groupId}/members`, {
       method: 'POST',
-      body: JSON.stringify({ memberUserIds }),
+      body: JSON.stringify({ members }),
     })
   },
 
