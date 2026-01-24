@@ -322,6 +322,7 @@ function AppContent() {
         <ProfilePage
           onNavigate={setActiveScreen}
           onBack={goHome}
+          tripCount={trips.length}
         />
       )}
 

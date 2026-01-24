@@ -1,7 +1,7 @@
 interface AvatarProps {
   src?: string | null
   name?: string | null
-  size?: 'sm' | 'md' | 'lg'
+  size?: 'sm' | 'md' | 'lg' | 'xl'
   className?: string
 }
 
@@ -35,6 +35,7 @@ export default function Avatar({ src, name, size = 'md', className = '' }: Avata
     sm: 'w-8 h-8 text-xs',
     md: 'w-10 h-10 text-sm',
     lg: 'w-12 h-12 text-base',
+    xl: 'w-20 h-20 text-2xl',
   }
 
   if (src) {
