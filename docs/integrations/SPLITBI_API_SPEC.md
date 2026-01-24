@@ -1,54 +1,47 @@
-# Splitbi API Specification for TripBi Integration
+# SplitBi API Specification for TripBi Integration
 
-> **Version:** 1.0
-> **Date:** 2026-01-18
-> **Status:** Ready for Implementation
+> **Version:** 2.0
+> **Date:** 2026-01-24
+> **Status:** ✅ Implemented and Deployed
 
 ---
 
 ## Overview
 
-This document specifies the API endpoints that need to be built in **Splitbi** to support integration with **TripBi**. TripBi will call these endpoints via Firebase Cloud Functions to create expense groups and fetch summaries.
+TripBi integrates with SplitBi's REST API to provide expense tracking for trips. The integration uses **email addresses** as the common identifier between the two Firebase projects.
+
+**Base URL:** `https://us-central1-splitbi-dev.cloudfunctions.net/api`
 
 ---
 
 ## Authentication
 
-### Method: API Key
+### Method: API Key (Bearer Token)
 
-All requests from TripBi will include an API key in the Authorization header.
+All requests from TripBi include an API key in the Authorization header:
 
 ```
-Authorization: Bearer SPLITBI_API_KEY
+Authorization: Bearer TRIPBI_API_KEY_DEV
 ```
 
-### Setup Required in Splitbi
+### TripBi Configuration
 
-1. Generate a static API key for TripBi
-2. Store the key securely (Firebase environment or Secret Manager)
-3. Create middleware to validate the key on incoming requests
-4. Reject requests with invalid/missing keys with `401 Unauthorized`
-
-### Example Middleware (Cloud Functions)
-
-```typescript
-const validateApiKey = (req: Request, res: Response, next: NextFunction) => {
-  const authHeader = req.headers.authorization;
-
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return res.status(401).json({ error: 'Missing authorization header' });
-  }
-
-  const apiKey = authHeader.split('Bearer ')[1];
-  const validKey = process.env.TRIPBI_API_KEY;
-
-  if (apiKey !== validKey) {
-    return res.status(401).json({ error: 'Invalid API key' });
-  }
-
-  next();
-};
+Environment variables in TripBi:
 ```
+VITE_SPLITBI_API_URL=https://us-central1-splitbi-dev.cloudfunctions.net/api
+VITE_SPLITBI_API_KEY=<api-key>
+```
+
+---
+
+## Key Design Decision: Email-Based Identification
+
+Since TripBi and SplitBi are separate Firebase projects, user IDs (UIDs) differ between them. The integration uses **email addresses** as the common identifier:
+
+1. TripBi sends member emails when creating/syncing groups
+2. SplitBi looks up users by email
+3. If no user exists, SplitBi creates a **placeholder user** with `authType: 'simulated'`
+4. When users sign into SplitBi with the same email, they automatically have access
 
 ---
 
@@ -56,437 +49,428 @@ const validateApiKey = (req: Request, res: Response, next: NextFunction) => {
 
 ### 1. Create Expense Group
 
-Creates a new expense group in Splitbi linked to a TripBi trip.
+Creates a new expense group in SplitBi linked to a TripBi trip.
 
 #### Request
 
 ```
-POST /api/tripbi/groups
+POST /v1/groups
 Content-Type: application/json
-Authorization: Bearer SPLITBI_API_KEY
+Authorization: Bearer <API_KEY>
 ```
 
 #### Request Body
 
 ```json
 {
-  "name": "Paris Trip 2025 - Expenses",
-  "tripId": "abc123",
-  "tripName": "Paris Trip 2025",
-  "createdBy": {
-    "odEmail": "user@example.com",
-    "displayName": "John Doe"
-  },
+  "name": "Paris Trip 2025 Expenses",
+  "currency": "USD",
+  "creatorEmail": "john@example.com",
   "members": [
-    {
-      "email": "user@example.com",
-      "displayName": "John Doe"
-    },
-    {
-      "email": "jane@example.com",
-      "displayName": "Jane Smith"
-    }
-  ]
+    { "email": "john@example.com", "displayName": "John Doe" },
+    { "email": "jane@example.com", "displayName": "Jane Smith" }
+  ],
+  "externalId": "tripbi_trip_abc123",
+  "externalSource": "tripbi"
 }
 ```
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | `name` | string | Yes | Name for the expense group |
-| `tripId` | string | Yes | TripBi trip ID (for reference/linking) |
-| `tripName` | string | Yes | Human-readable trip name |
-| `createdBy.email` | string | Yes | Email of the trip creator |
-| `createdBy.displayName` | string | No | Display name of creator |
+| `currency` | string | Yes | Currency code (USD, EUR, etc.) |
+| `creatorEmail` | string | Yes | Email of the group creator |
 | `members` | array | Yes | Array of member objects |
 | `members[].email` | string | Yes | Member's email address |
 | `members[].displayName` | string | No | Member's display name |
+| `externalId` | string | No | TripBi trip ID for linking |
+| `externalSource` | string | No | Always "tripbi" |
 
-#### Success Response
-
-```
-HTTP/1.1 201 Created
-Content-Type: application/json
-```
+#### Success Response (201 Created)
 
 ```json
 {
   "success": true,
   "data": {
-    "groupId": "splitbi_group_xyz789",
-    "groupName": "Paris Trip 2025 - Expenses",
-    "createdAt": "2025-06-15T10:30:00Z",
+    "groupId": "xyz789",
+    "groupName": "Paris Trip 2025 Expenses",
+    "currency": "USD",
     "memberCount": 2,
-    "inviteLink": "https://splitbi.app/join/xyz789"
+    "createdAt": "2026-01-24T10:30:00Z"
   }
 }
 ```
-
-#### Error Responses
-
-```json
-// 400 Bad Request - Missing required fields
-{
-  "success": false,
-  "error": {
-    "code": "INVALID_REQUEST",
-    "message": "Missing required field: name"
-  }
-}
-
-// 401 Unauthorized - Invalid API key
-{
-  "success": false,
-  "error": {
-    "code": "UNAUTHORIZED",
-    "message": "Invalid API key"
-  }
-}
-
-// 409 Conflict - Group already exists for this trip
-{
-  "success": false,
-  "error": {
-    "code": "GROUP_EXISTS",
-    "message": "A group already exists for this trip",
-    "existingGroupId": "splitbi_group_abc123"
-  }
-}
-
-// 500 Internal Server Error
-{
-  "success": false,
-  "error": {
-    "code": "INTERNAL_ERROR",
-    "message": "Failed to create group"
-  }
-}
-```
-
-#### Implementation Notes
-
-1. Check if a group already exists for the given `tripId`
-2. Create the group in Splitbi's Firestore
-3. Add all members to the group (create placeholder accounts if they don't exist)
-4. Store `tripId` in the group document for back-reference
-5. Return the Splitbi group ID
 
 ---
 
 ### 2. Get Group Summary
 
-Retrieves expense summary for a Splitbi group.
+Retrieves expense summary including balances and simplified debts.
 
 #### Request
 
 ```
-GET /api/tripbi/groups/{groupId}/summary
-Authorization: Bearer SPLITBI_API_KEY
+GET /v1/groups/{groupId}/summary
+Authorization: Bearer <API_KEY>
 ```
 
-#### Path Parameters
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `groupId` | string | Splitbi group ID |
-
-#### Success Response
-
-```
-HTTP/1.1 200 OK
-Content-Type: application/json
-```
+#### Success Response (200 OK)
 
 ```json
 {
   "success": true,
   "data": {
-    "groupId": "splitbi_group_xyz789",
-    "groupName": "Paris Trip 2025 - Expenses",
-    "tripId": "abc123",
-    "currency": "USD",
-    "totalExpenses": 1250.50,
+    "group": {
+      "id": "xyz789",
+      "name": "Paris Trip 2025 Expenses",
+      "currency": "USD",
+      "memberCount": 2,
+      "externalId": "tripbi_trip_abc123",
+      "externalSource": "tripbi"
+    },
+    "totalSpent": 1250.50,
     "expenseCount": 15,
     "memberBalances": [
       {
+        "userId": "user123",
         "email": "john@example.com",
         "displayName": "John Doe",
         "balance": 125.25,
-        "paid": 500.00,
-        "owes": 374.75,
-        "isSettled": false
+        "totalPaid": 500.00,
+        "totalOwed": 374.75
       },
       {
+        "userId": "user456",
         "email": "jane@example.com",
         "displayName": "Jane Smith",
         "balance": -125.25,
-        "paid": 250.00,
-        "owes": 375.25,
-        "isSettled": false
+        "totalPaid": 250.00,
+        "totalOwed": 375.25
       }
     ],
-    "lastExpenseDate": "2025-06-20T14:30:00Z",
-    "lastUpdated": "2025-06-20T14:30:00Z"
+    "simplifiedDebts": [
+      {
+        "from": "user456",
+        "to": "user123",
+        "amount": 125.25
+      }
+    ],
+    "lastUpdated": "2026-01-24T14:30:00Z"
   }
 }
 ```
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `totalExpenses` | number | Sum of all expenses in the group |
-| `expenseCount` | number | Number of expense entries |
-| `memberBalances[].balance` | number | Positive = owed money, Negative = owes money |
-| `memberBalances[].paid` | number | Total amount this member has paid |
-| `memberBalances[].owes` | number | Total amount this member owes |
-| `memberBalances[].isSettled` | boolean | Whether this member has settled up |
+| Field | Description |
+|-------|-------------|
+| `totalSpent` | Sum of all expenses in the group |
+| `memberBalances[].balance` | Positive = owed money, Negative = owes money |
+| `simplifiedDebts` | Optimized list of who pays whom |
 
-#### Error Responses
+---
+
+### 3. Get Group Expenses
+
+Retrieves recent expenses (paginated).
+
+#### Request
+
+```
+GET /v1/groups/{groupId}/expenses?limit=20&cursor=<cursor>
+Authorization: Bearer <API_KEY>
+```
+
+#### Query Parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `limit` | number | 20 | Max items to return (1-100) |
+| `cursor` | string | - | Pagination cursor |
+
+#### Success Response (200 OK)
 
 ```json
-// 404 Not Found
 {
-  "success": false,
-  "error": {
-    "code": "GROUP_NOT_FOUND",
-    "message": "Group not found"
+  "success": true,
+  "data": {
+    "expenses": [
+      {
+        "id": "exp123",
+        "description": "Dinner at Le Petit",
+        "amount": 120.50,
+        "currency": "USD",
+        "category": "Food",
+        "paidBy": "user123",
+        "paidByName": "John Doe",
+        "expenseDate": "2026-01-20",
+        "splitMethod": "equal",
+        "splits": [
+          { "userId": "user123", "amount": 60.25 },
+          { "userId": "user456", "amount": 60.25 }
+        ],
+        "createdAt": "2026-01-20T19:30:00Z"
+      }
+    ],
+    "pagination": {
+      "hasMore": true,
+      "nextCursor": "exp122"
+    }
   }
 }
 ```
 
 ---
 
-### 3. Add Member to Group
+### 4. Add Members to Group
 
-Adds a new member to an existing Splitbi group (for late joiners to a trip).
+Adds new members to an existing group (for late joiners).
 
 #### Request
 
 ```
-POST /api/tripbi/groups/{groupId}/members
+POST /v1/groups/{groupId}/members
 Content-Type: application/json
-Authorization: Bearer SPLITBI_API_KEY
+Authorization: Bearer <API_KEY>
 ```
 
 #### Request Body
 
 ```json
 {
-  "email": "newmember@example.com",
-  "displayName": "New Member"
+  "members": [
+    { "email": "newmember@example.com", "displayName": "New Member" }
+  ]
 }
 ```
 
-#### Success Response
-
-```
-HTTP/1.1 201 Created
-Content-Type: application/json
-```
+#### Success Response (200 OK)
 
 ```json
 {
   "success": true,
   "data": {
-    "added": true,
-    "email": "newmember@example.com",
-    "inviteLink": "https://splitbi.app/join/xyz789"
-  }
-}
-```
-
-#### Error Responses
-
-```json
-// 409 Conflict - Member already in group
-{
-  "success": false,
-  "error": {
-    "code": "MEMBER_EXISTS",
-    "message": "Member is already in this group"
+    "addedCount": 1,
+    "skippedCount": 0,
+    "newMemberCount": 3
   }
 }
 ```
 
 ---
 
-### 4. Check Group Exists
+### 5. Send Invite Emails
 
-Verifies if a Splitbi group exists (for error handling in TripBi).
+Sends email invitations to group members via Resend.
 
 #### Request
 
 ```
-GET /api/tripbi/groups/{groupId}/exists
-Authorization: Bearer SPLITBI_API_KEY
-```
-
-#### Success Response
-
-```
-HTTP/1.1 200 OK
+POST /v1/groups/{groupId}/invite
 Content-Type: application/json
+Authorization: Bearer <API_KEY>
 ```
+
+#### Request Body
+
+```json
+{
+  "inviterName": "John Doe",
+  "inviterEmail": "john@example.com",
+  "memberEmails": ["jane@example.com"]  // Optional - sends to all if omitted
+}
+```
+
+#### Success Response (200 OK)
+
+```json
+{
+  "success": true,
+  "data": {
+    "sentCount": 1,
+    "skippedCount": 0,
+    "failedCount": 0
+  }
+}
+```
+
+**Note:** Requires `RESEND_API_KEY` to be configured in SplitBi. If not configured, returns an error.
+
+---
+
+### 6. Check Group Exists
+
+Verifies if a group exists.
+
+#### Request
+
+```
+GET /v1/groups/{groupId}/exists
+Authorization: Bearer <API_KEY>
+```
+
+#### Success Response (200 OK)
 
 ```json
 {
   "success": true,
   "data": {
     "exists": true,
-    "groupId": "splitbi_group_xyz789",
-    "groupName": "Paris Trip 2025 - Expenses"
+    "groupId": "xyz789",
+    "groupName": "Paris Trip 2025 Expenses"
   }
 }
 ```
 
 ---
 
-### 5. Delete Group (Optional)
+### 7. Find Group by External ID
 
-Deletes a Splitbi group when a TripBi trip is deleted.
+Finds a group by its TripBi trip ID.
 
 #### Request
 
 ```
-DELETE /api/tripbi/groups/{groupId}
-Authorization: Bearer SPLITBI_API_KEY
+GET /v1/groups/by-external/{tripId}?source=tripbi
+Authorization: Bearer <API_KEY>
 ```
 
-#### Success Response
-
-```
-HTTP/1.1 200 OK
-Content-Type: application/json
-```
+#### Success Response (200 OK)
 
 ```json
 {
   "success": true,
   "data": {
-    "deleted": true,
-    "groupId": "splitbi_group_xyz789"
+    "found": true,
+    "groupId": "xyz789",
+    "groupName": "Paris Trip 2025 Expenses"
   }
 }
 ```
 
-#### Notes
-
-- Consider soft-delete (mark as archived) instead of hard delete
-- Users may want to keep expense history even if trip is deleted
-
 ---
 
-## CORS Configuration
+### 8. Delete Group (Archive)
 
-Splitbi needs to allow requests from TripBi Cloud Functions. Since these are server-to-server calls, CORS may not be needed, but if using HTTP functions:
+Soft-deletes (archives) a group.
 
-```typescript
-const corsOptions = {
-  origin: [
-    'https://tripbi.app',
-    'https://tripbi-dev.web.app',
-    'http://localhost:5173' // for development
-  ],
-  methods: ['GET', 'POST', 'DELETE'],
-  allowedHeaders: ['Content-Type', 'Authorization']
-};
+#### Request
+
+```
+DELETE /v1/groups/{groupId}
+Authorization: Bearer <API_KEY>
 ```
 
----
+#### Success Response (200 OK)
 
-## Data Storage in Splitbi
-
-### Suggested Schema Addition
-
-Add to Splitbi group documents:
-
-```typescript
-interface SplitbiGroup {
-  // ... existing fields ...
-
-  // TripBi integration fields
-  tripbiIntegration?: {
-    tripId: string;          // TripBi trip ID
-    tripName: string;        // Trip name at time of linking
-    linkedAt: Timestamp;     // When integration was enabled
-    linkedBy: string;        // Email of user who linked
-  };
+```json
+{
+  "success": true,
+  "data": {
+    "archived": true,
+    "groupId": "xyz789"
+  }
 }
 ```
 
-### Index Requirements
+---
 
-Create a Firestore index for querying by tripId:
+## Error Responses
 
+All errors follow this format:
+
+```json
+{
+  "success": false,
+  "error": {
+    "code": "ERROR_CODE",
+    "message": "Human-readable message",
+    "details": {}
+  }
+}
 ```
-Collection: groups
-Field: tripbiIntegration.tripId (Ascending)
+
+### Common Error Codes
+
+| Code | HTTP Status | Description |
+|------|-------------|-------------|
+| `UNAUTHORIZED` | 401 | Invalid or missing API key |
+| `MISSING_FIELDS` | 400 | Required fields not provided |
+| `INVALID_EMAIL` | 400 | Email format is invalid |
+| `INVALID_CURRENCY` | 400 | Currency code not supported |
+| `GROUP_NOT_FOUND` | 404 | Group does not exist |
+| `INTERNAL_ERROR` | 500 | Server error |
+
+---
+
+## TripBi Client Implementation
+
+### Files
+
+| File | Purpose |
+|------|---------|
+| `src/lib/splitbi.ts` | API client with typed methods |
+| `src/hooks/useSplitBi.ts` | React hook for SplitBi operations |
+
+### Usage Example
+
+```typescript
+import { useSplitBi } from '../hooks/useSplitBi'
+
+function ExpenseTracker({ trip }) {
+  const {
+    isConfigured,
+    isLoading,
+    error,
+    summary,
+    createExpenseGroup,
+    fetchSummary,
+    syncMembers,
+    sendInviteEmails,
+  } = useSplitBi(trip)
+
+  const handleEnable = async () => {
+    const groupId = await createExpenseGroup(trip, 'USD')
+    if (groupId) {
+      // Group created successfully
+    }
+  }
+
+  // ...
+}
 ```
 
 ---
 
-## Rate Limiting (Recommended)
+## Implementation Checklist
 
-Implement basic rate limiting to prevent abuse:
-
-| Endpoint | Limit |
-|----------|-------|
-| POST /groups | 10 requests/minute per API key |
-| GET /groups/{id}/summary | 60 requests/minute per API key |
-| Others | 30 requests/minute per API key |
+- [x] Generate API key for TripBi (`TRIPBI_API_KEY_DEV`)
+- [x] Create API key validation middleware
+- [x] Implement `POST /v1/groups` endpoint
+- [x] Implement `GET /v1/groups/{id}/summary` endpoint
+- [x] Implement `GET /v1/groups/{id}/expenses` endpoint
+- [x] Implement `POST /v1/groups/{id}/members` endpoint
+- [x] Implement `POST /v1/groups/{id}/invite` endpoint
+- [x] Implement `GET /v1/groups/{id}/exists` endpoint
+- [x] Implement `DELETE /v1/groups/{id}` endpoint
+- [x] Implement `GET /v1/groups/by-external/{id}` endpoint
+- [x] Add `externalIntegration` field to group schema
+- [x] Email-based user identification
+- [x] TripBi client library (`src/lib/splitbi.ts`)
+- [x] TripBi React hook (`src/hooks/useSplitBi.ts`)
+- [x] ExpenseTracker UI component
+- [ ] Configure `RESEND_API_KEY` for email invites (optional)
+- [ ] Production API key setup
 
 ---
 
-## Testing
+## Remaining Setup
 
-### Test API Key
+### Email Invites (Optional)
 
-Create a separate test API key for development:
-
-```
-TRIPBI_API_KEY_DEV=test_key_for_development
-TRIPBI_API_KEY_PROD=secure_production_key
-```
-
-### Test Endpoints
-
-Before TripBi integration, test with curl:
+To enable email invites, set the Resend API key in SplitBi:
 
 ```bash
-# Create group
-curl -X POST https://your-splitbi-functions-url/api/tripbi/groups \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer YOUR_API_KEY" \
-  -d '{
-    "name": "Test Trip Expenses",
-    "tripId": "test123",
-    "tripName": "Test Trip",
-    "createdBy": {"email": "test@example.com"},
-    "members": [{"email": "test@example.com"}]
-  }'
-
-# Get summary
-curl -X GET https://your-splitbi-functions-url/api/tripbi/groups/GROUP_ID/summary \
-  -H "Authorization: Bearer YOUR_API_KEY"
+cd SplitBi
+npx firebase functions:secrets:set RESEND_API_KEY
 ```
 
----
-
-## Implementation Checklist for Splitbi
-
-- [ ] Generate API key for TripBi
-- [ ] Create API key validation middleware
-- [ ] Implement `POST /api/tripbi/groups` endpoint
-- [ ] Implement `GET /api/tripbi/groups/{id}/summary` endpoint
-- [ ] Implement `POST /api/tripbi/groups/{id}/members` endpoint
-- [ ] Implement `GET /api/tripbi/groups/{id}/exists` endpoint
-- [ ] (Optional) Implement `DELETE /api/tripbi/groups/{id}` endpoint
-- [ ] Add `tripbiIntegration` field to group schema
-- [ ] Create Firestore index for tripId queries
-- [ ] Test endpoints with curl
-- [ ] Deploy to Splitbi production
-- [ ] Share API key securely with TripBi
-
----
-
-## Questions?
-
-If anything is unclear or needs adjustment, update this spec before implementation to keep both projects aligned.
+Without this, the "Send Email Invites" button will show an error, but users can still access SplitBi by signing in with the same email.

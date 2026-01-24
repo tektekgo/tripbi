@@ -1,7 +1,7 @@
 # TripBi Features Reference
 
 **Version:** 0.1.0
-**Last Updated:** January 23, 2026
+**Last Updated:** January 24, 2026
 
 This document describes all implemented features in TripBi as of the current release.
 
@@ -21,6 +21,7 @@ This document describes all implemented features in TripBi as of the current rel
 10. [Trip Settings](#10-trip-settings)
 11. [Timeline Export & Sharing](#11-timeline-export--sharing)
 12. [Profile Page](#12-profile-page)
+13. [Expense Tracking (SplitBi)](#13-expense-tracking-splitbi)
 
 ---
 
@@ -334,6 +335,63 @@ Create a public, read-only link anyone can view without signing in:
 
 ---
 
+## 13. Expense Tracking (SplitBi)
+
+### What is SplitBi Integration?
+
+TripBi integrates with **SplitBi** to provide expense tracking for your trip. Track shared expenses, see who owes whom, and keep everyone's balances clear.
+
+### Enabling Expense Tracking
+
+1. Go to your trip's detail page
+2. Click the **Expenses** tab
+3. Click **"Enable Expense Tracking"**
+4. A SplitBi expense group is automatically created with all trip members
+
+### After Enabling
+
+**Optional: Notify Members**
+- After enabling, you'll see a prompt: "Notify members via email?"
+- Click **"Send Email Invites"** to email all trip members an invite to SplitBi
+- Click **"Skip for now"** if members will access SplitBi on their own
+
+**Adding Expenses**
+- Click the prominent **"Add Expenses in SplitBi"** button
+- This opens SplitBi where you can add and manage expenses
+- Expenses are automatically synced back to TripBi
+
+### Expense Summary View
+
+The Expenses tab shows:
+
+| Section | Description |
+|---------|-------------|
+| **Total Spent** | Sum of all group expenses |
+| **Member Balances** | Each member's balance (positive = owed money, negative = owes money) |
+| **Simplified Debts** | Who should pay whom to settle up |
+| **Recent Expenses** | List of recent expense entries |
+
+### Syncing New Members
+
+If new members join your trip after expense tracking is enabled:
+1. Click **"Sync New Members"** button
+2. New trip members are automatically added to the SplitBi group
+3. They can then add and view expenses
+
+### How It Works
+
+- Uses **email addresses** to identify members across apps
+- Sign into SplitBi with the **same email** you use in TripBi
+- Your expenses and balances will be linked automatically
+
+### Privacy & Access
+
+- Only trip members can view the expense summary
+- Detailed expense management happens in SplitBi
+- Each member has full access to the shared expense group
+
+---
+
 ## Feature Summary Table
 
 | Feature | Status | Privacy |
@@ -353,12 +411,12 @@ Create a public, read-only link anyone can view without signing in:
 | Timeline Export | ✅ | Personal download |
 | Shareable Timeline | ✅ | **Public** - anyone with link |
 | Profile Page | ✅ | **Private** - only you see |
+| Expense Tracking | ✅ | Group visible (via SplitBi) |
 
 ---
 
 ## Coming Soon
 
-- Splitbi integration for expense tracking
 - Push notifications
 - Leave trip (for non-admin members)
 - Member role management (admin/member permissions)

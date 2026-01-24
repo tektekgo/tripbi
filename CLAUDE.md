@@ -2,7 +2,7 @@
 
 ## Project Status
 
-**Last Updated:** January 23, 2026
+**Last Updated:** January 24, 2026
 
 ### Current State - MVP Features
 
@@ -21,7 +21,7 @@
 | **Trip Settings** | ✅ Complete | Edit trip details, delete trip (admin only) |
 | **Timeline Export** | ✅ Complete | PDF download + shareable public link |
 | **Profile Page** | ✅ Complete | View user info, sign out (read-only) |
-| **Splitbi Integration** | 🔲 Not Started | Optional, future |
+| **SplitBi Integration** | ✅ Complete | Expense tracking via SplitBi API (Expenses tab) |
 
 ### Infrastructure Status
 
@@ -91,6 +91,15 @@
 - `TimelineView.tsx` - Full timeline with day groups
 - `TimelineExport.tsx` - PDF export + shareable link generation
 
+**SplitBi Integration** (`src/features/splitbi/`)
+- `ExpenseTracker.tsx` - Main expense tracking UI with enable/sync/summary
+- `ExpenseSummary.tsx` - Group balance summary and simplified debts
+- `ExpenseList.tsx` - Recent expenses list
+
+**SplitBi Hooks & API** (`src/hooks/`, `src/lib/`)
+- `useSplitBi.ts` - Hook for SplitBi API operations (create group, fetch summary, sync members, send invites)
+- `splitbi.ts` - SplitBi REST API client (email-based identification)
+
 **Pages** (`src/pages/`)
 - `Home.tsx` - Landing (logged out) / Dashboard (logged in)
 - `Trips.tsx` - Trip list page
@@ -152,12 +161,13 @@ sharedTimelines/{token}
 
 ### Future Features
 
-- Splitbi integration toggle
 - Push notifications
 - Leave trip (for non-admin members)
 - Member role management (admin/member permissions)
 - Trip cover image upload
 - Edit profile (change display name, photo)
+- Production environment (tripbi-prod)
+- Custom domain setup (tripbi.app)
 
 ---
 
@@ -288,6 +298,36 @@ type Screen = 'home' | 'dashboard' | 'trips' | 'trip-detail' | 'profile' | 'crea
 2. **Option A (email):** Enter email → Creates invitation in Firestore → Cloud Function sends email
 3. **Option B (link):** Click "Generate Link" → Creates invitation → Copy link to share
 4. Invitee opens link → AcceptInvite page → Sign in with Google → Join trip
+
+### SplitBi Integration
+
+TripBi integrates with SplitBi for expense tracking. Key details:
+
+**Architecture:**
+- Uses email addresses as the common identifier (Firebase UIDs differ between projects)
+- TripBi calls SplitBi's REST API (`/api/v1/*`) with API key authentication
+- SplitBi creates placeholder users for emails that don't have accounts yet
+
+**Flow:**
+1. User clicks "Enable Expense Tracking" on Expenses tab
+2. TripBi calls SplitBi API to create a group with trip members' emails
+3. SplitBi returns `groupId`, stored in trip's `splitbiGroupId` field
+4. User optionally sends email invites to notify members
+5. Members add expenses in SplitBi app (same email = auto-access)
+6. TripBi fetches and displays expense summary from SplitBi
+
+**API Endpoints Used:**
+- `POST /v1/groups` - Create expense group
+- `GET /v1/groups/:id/summary` - Get balances and debts
+- `GET /v1/groups/:id/expenses` - Get recent expenses
+- `POST /v1/groups/:id/members` - Sync new trip members
+- `POST /v1/groups/:id/invite` - Send email invites
+
+**Environment Variables:**
+```
+VITE_SPLITBI_API_URL=https://us-central1-splitbi-dev.cloudfunctions.net/api
+VITE_SPLITBI_API_KEY=<api-key-for-tripbi>
+```
 
 ---
 
