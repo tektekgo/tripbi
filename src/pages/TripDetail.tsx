@@ -9,8 +9,9 @@ import { Timestamp } from 'firebase/firestore'
 import { ProposalList } from '@/features/proposals'
 import { TripBookingStatus } from '@/features/bookings'
 import { TimelineView, TimelineExport } from '@/features/timeline'
+import { ExpenseTracker } from '@/features/splitbi'
 
-type TripTab = 'proposals' | 'bookings' | 'timeline'
+type TripTab = 'proposals' | 'bookings' | 'timeline' | 'expenses'
 
 interface TripDetailPageProps {
   trip: Trip
@@ -131,6 +132,7 @@ export default function TripDetailPage({
     { id: 'proposals', label: 'Proposals', count: proposals.length },
     { id: 'bookings', label: 'Bookings', count: bookings.length },
     { id: 'timeline', label: 'Timeline' },
+    { id: 'expenses', label: 'Expenses' },
   ]
 
   return (
@@ -375,6 +377,19 @@ export default function TripDetailPage({
                 proposals={proposals}
                 onProposalClick={onProposalClick}
                 timezoneSettings={trip.timezoneSettings}
+              />
+            </div>
+          )}
+
+          {/* Expenses Tab */}
+          {activeTab === 'expenses' && (
+            <div>
+              <h2 className="text-lg font-semibold text-primary-700 mb-6">
+                Trip Expenses
+              </h2>
+              <ExpenseTracker
+                trip={trip}
+                members={trip.memberDetails}
               />
             </div>
           )}
