@@ -24,6 +24,7 @@ interface UseSplitBiResult {
   fetchSummary: () => Promise<void>
   fetchExpenses: (limit?: number) => Promise<void>
   syncMembers: (trip: Trip) => Promise<void>
+  sendInviteEmails: (trip: Trip, inviterName: string, inviterEmail: string) => Promise<{ sentCount: number; failedCount: number } | null>
   unlinkExpenseGroup: () => Promise<void>
   clearError: () => void
 }
@@ -171,6 +172,32 @@ export function useSplitBi(trip: Trip | null): UseSplitBiResult {
     [groupId, fetchSummary]
   )
 
+  // Send invite emails to group members
+  const sendInviteEmails = useCallback(
+    async (_tripToInvite: Trip, inviterName: string, inviterEmail: string) => {
+      if (!groupId) {
+        setError('No expense group linked to this trip')
+        return null
+      }
+
+      setIsLoading(true)
+      setError(null)
+
+      try {
+        const result = await splitbiApi.sendInvites(groupId, inviterName, inviterEmail)
+        return { sentCount: result.sentCount, failedCount: result.failedCount }
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Failed to send invite emails'
+        setError(message)
+        console.error('SplitBi sendInviteEmails error:', err)
+        return null
+      } finally {
+        setIsLoading(false)
+      }
+    },
+    [groupId]
+  )
+
   // Unlink expense group from trip
   const unlinkExpenseGroup = useCallback(async () => {
     if (!trip) return
@@ -216,6 +243,7 @@ export function useSplitBi(trip: Trip | null): UseSplitBiResult {
     fetchSummary,
     fetchExpenses,
     syncMembers,
+    sendInviteEmails,
     unlinkExpenseGroup,
     clearError,
   }

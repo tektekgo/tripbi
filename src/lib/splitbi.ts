@@ -243,6 +243,25 @@ export const splitbiApi = {
       method: 'DELETE',
     })
   },
+
+  /**
+   * Send invite emails to group members
+   */
+  async sendInvites(
+    groupId: string,
+    inviterName: string,
+    inviterEmail: string,
+    memberEmails?: string[]
+  ): Promise<{ sentCount: number; skippedCount: number; failedCount: number }> {
+    return apiRequest(`/v1/groups/${groupId}/invite`, {
+      method: 'POST',
+      body: JSON.stringify({
+        inviterName,
+        inviterEmail,
+        memberEmails,
+      }),
+    })
+  },
 }
 
 export default splitbiApi

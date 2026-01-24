@@ -7,6 +7,7 @@
 
 import { useState } from 'react'
 import type { Trip, TripMember } from '@/types'
+import { useAuth } from '@/contexts/AuthContext'
 import { useSplitBi } from '@/hooks/useSplitBi'
 import EmptyState from '@/components/ui/EmptyState'
 import ExpenseSummary from './ExpenseSummary'
@@ -33,6 +34,7 @@ const CURRENCY_OPTIONS = [
 ]
 
 export default function ExpenseTracker({ trip, members, onGroupLinked }: ExpenseTrackerProps) {
+  const { user } = useAuth()
   const {
     isConfigured,
     isLoading,
@@ -42,6 +44,7 @@ export default function ExpenseTracker({ trip, members, onGroupLinked }: Expense
     createExpenseGroup,
     fetchExpenses,
     syncMembers,
+    sendInviteEmails,
     unlinkExpenseGroup,
     clearError,
   } = useSplitBi(trip)
@@ -50,6 +53,9 @@ export default function ExpenseTracker({ trip, members, onGroupLinked }: Expense
   const [showExpenses, setShowExpenses] = useState(false)
   const [showUnlinkConfirm, setShowUnlinkConfirm] = useState(false)
   const [syncSuccess, setSyncSuccess] = useState(false)
+  const [justEnabled, setJustEnabled] = useState(false)
+  const [inviteResult, setInviteResult] = useState<{ sentCount: number; failedCount: number } | null>(null)
+  const [sendingInvites, setSendingInvites] = useState(false)
 
   // Not configured state
   if (!isConfigured) {
@@ -162,8 +168,11 @@ export default function ExpenseTracker({ trip, members, onGroupLinked }: Expense
             <button
               onClick={async () => {
                 const groupId = await createExpenseGroup(trip, selectedCurrency)
-                if (groupId && onGroupLinked) {
-                  onGroupLinked(groupId)
+                if (groupId) {
+                  setJustEnabled(true)
+                  if (onGroupLinked) {
+                    onGroupLinked(groupId)
+                  }
                 }
               }}
               disabled={isLoading}
@@ -191,6 +200,118 @@ export default function ExpenseTracker({ trip, members, onGroupLinked }: Expense
           <p className="mt-4 text-xs text-primary-700/50 text-center">
             All trip members will be added to the expense group automatically
           </p>
+        </div>
+      </div>
+    )
+  }
+
+  // Just enabled - show success with notify option
+  if (justEnabled && !inviteResult) {
+    return (
+      <div className="space-y-6">
+        {/* Success card */}
+        <div className="card bg-gradient-to-br from-success-500 to-success-600 text-white p-8 text-center">
+          <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-white/20 flex items-center justify-center">
+            <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+          <h2 className="text-2xl font-bold mb-2">Expense Tracking Enabled!</h2>
+          <p className="text-white/80 text-sm">
+            Your trip is now connected to SplitBi. All {members.length} members have been added.
+          </p>
+        </div>
+
+        {/* Notify members option */}
+        <div className="card p-6">
+          <div className="flex items-start gap-4">
+            <div className="w-12 h-12 rounded-full bg-primary-100 flex items-center justify-center flex-shrink-0">
+              <svg className="w-6 h-6 text-primary-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                  d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+              </svg>
+            </div>
+            <div className="flex-1">
+              <h3 className="font-semibold text-primary-700 mb-1">Notify members via email?</h3>
+              <p className="text-sm text-primary-700/70 mb-4">
+                Send an email to invite trip members to SplitBi so they can add expenses.
+                They'll be able to sign in with the same email and see the group automatically.
+              </p>
+              <div className="flex flex-wrap gap-3">
+                <button
+                  onClick={async () => {
+                    if (!user?.displayName || !user?.email) return
+                    setSendingInvites(true)
+                    const result = await sendInviteEmails(trip, user.displayName, user.email)
+                    setSendingInvites(false)
+                    if (result) {
+                      setInviteResult(result)
+                    }
+                  }}
+                  disabled={sendingInvites || !user?.email}
+                  className="btn-primary"
+                >
+                  {sendingInvites ? (
+                    <>
+                      <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                      </svg>
+                      Sending...
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                          d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                      </svg>
+                      Send Email Invites
+                    </>
+                  )}
+                </button>
+                <button
+                  onClick={() => setJustEnabled(false)}
+                  className="btn-outline"
+                >
+                  Skip for now
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Show invite result then continue
+  if (inviteResult) {
+    return (
+      <div className="space-y-6">
+        {/* Invite result card */}
+        <div className="card p-6 bg-success-50 border border-success-200">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-full bg-success-100 flex items-center justify-center">
+              <svg className="w-6 h-6 text-success-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <div className="flex-1">
+              <h3 className="font-semibold text-success-700">Invites Sent!</h3>
+              <p className="text-sm text-success-600">
+                {inviteResult.sentCount} email{inviteResult.sentCount !== 1 ? 's' : ''} sent successfully
+                {inviteResult.failedCount > 0 && ` (${inviteResult.failedCount} failed)`}
+              </p>
+            </div>
+            <button
+              onClick={() => {
+                setJustEnabled(false)
+                setInviteResult(null)
+              }}
+              className="btn-primary btn-sm"
+            >
+              Continue
+            </button>
+          </div>
         </div>
       </div>
     )
@@ -229,6 +350,36 @@ export default function ExpenseTracker({ trip, members, onGroupLinked }: Expense
           </button>
         </div>
       )}
+
+      {/* Add expenses CTA - prominent for members */}
+      <div className="card p-6 bg-gradient-to-r from-primary-50 to-primary-100 border-2 border-primary-200">
+        <div className="flex flex-col sm:flex-row items-center gap-4">
+          <div className="w-14 h-14 rounded-xl bg-primary-500 flex items-center justify-center flex-shrink-0">
+            <svg className="w-7 h-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+            </svg>
+          </div>
+          <div className="flex-1 text-center sm:text-left">
+            <h3 className="font-semibold text-primary-700 text-lg">Add Expenses in SplitBi</h3>
+            <p className="text-sm text-primary-600/80">
+              Log meals, transport, activities - everything gets split automatically
+            </p>
+          </div>
+          <a
+            href={`https://splitbi-dev.web.app/groups/${trip.splitbiGroupId}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="btn-primary px-6 py-3 text-base font-semibold whitespace-nowrap"
+          >
+            Open SplitBi
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+            </svg>
+          </a>
+        </div>
+      </div>
 
       {/* Summary section */}
       <ExpenseSummary
@@ -294,36 +445,6 @@ export default function ExpenseTracker({ trip, members, onGroupLinked }: Expense
           currency={summary?.group.currency || 'USD'}
         />
       )}
-
-      {/* Link to SplitBi */}
-      <div className="card p-4 bg-cream-100 border border-cream-300">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-primary-100 flex items-center justify-center">
-              <svg className="w-5 h-5 text-primary-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                  d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-              </svg>
-            </div>
-            <div>
-              <p className="text-sm font-medium text-primary-700">Add expenses in SplitBi</p>
-              <p className="text-xs text-primary-700/60">Full expense management with receipts and categories</p>
-            </div>
-          </div>
-          <a
-            href={`https://splitbi-dev.web.app/groups/${trip.splitbiGroupId}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="btn-primary btn-sm"
-          >
-            Open SplitBi
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-            </svg>
-          </a>
-        </div>
-      </div>
 
       {/* Unlink confirmation modal */}
       {showUnlinkConfirm && (
