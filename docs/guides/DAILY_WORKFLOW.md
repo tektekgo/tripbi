@@ -1,382 +1,209 @@
-# TripBi Daily Workflow - Quick Reference
+# TripBi - Build & Deploy Guide
 
-> **Last Updated:** 2026-01-23
-> Quick commands and workflows for daily TripBi development
+> **Last Updated:** 2026-02-14
 
 ---
 
-## TL;DR - Most Important Commands
+## The Simple Mental Model
 
-```bash
-# Day-to-day development
-npm run dev                            # Start local server at localhost:5173
-
-# Before committing
-npx tsc --noEmit                       # Check for TypeScript errors
-npm run lint                           # Check for lint errors
-
-# Deploy to tripbi-dev.web.app
-npm run deploy:dev                     # Build + deploy (one command)
+```
+LOCAL DEV  ──►  DEV (testing)  ──►  PROD (live)
+npm run dev     npm run deploy      npm run deploy:prod
+localhost:5173  tripbi-dev.web.app  tripbi.app
 ```
 
-**Key Rule:** Always use `build:dev` or `deploy:dev` when deploying to tripbi-dev. Using plain `build` will fail because `.env.production` has placeholder values.
+| What you want to do | Command | What it does |
+|---------------------|---------|-------------|
+| **Work locally** | `npm run dev` | Starts local server at localhost:5173 |
+| **Deploy to dev for testing** | `npm run deploy` | Builds + deploys to tripbi-dev.web.app |
+| **Deploy to production** | `npm run deploy:prod` | Builds + deploys to tripbi.app |
+
+That's it. Three commands cover 95% of your workflow.
 
 ---
 
-## Quick Commands Cheat Sheet
+## How It Works Under the Hood
 
-```bash
-# ─────────────────────────────────────────────────────────────
-# DEVELOPMENT
-# ─────────────────────────────────────────────────────────────
+### Environment Variables Control Everything
 
-npm run dev              # Start local dev server (http://localhost:5173)
-npm run build:no-bump    # Build without incrementing version (for testing)
-npm run lint             # Run ESLint
-npm run preview          # Preview production build locally
+Vite reads a different `.env` file depending on the **build mode**:
 
-# ─────────────────────────────────────────────────────────────
-# VERSION MANAGEMENT
-# ─────────────────────────────────────────────────────────────
+| Build mode | Env file read | Firebase project | Has real keys? |
+|------------|---------------|-----------------|----------------|
+| `development` | `.env.development` | tripbi-dev | Yes |
+| `production` | `.env.production` | tripbi-prod | Placeholders (until prod is set up) |
 
-npm run build            # Build + auto-increment build number
-npm run version:patch    # 1.0.0 → 1.0.1 (bug fixes)
-npm run version:minor    # 1.0.0 → 1.1.0 (new features)
-npm run version:major    # 1.0.0 → 2.0.0 (breaking changes)
-npm run version:sync     # Sync version to Android/iOS (after Capacitor setup)
+- `npm run dev` and `npm run deploy` both use **development** mode → `.env.development`
+- `npm run build` and `npm run deploy:prod` both use **production** mode → `.env.production`
 
-# ─────────────────────────────────────────────────────────────
-# GIT WORKFLOW (currently working directly on main)
-# ─────────────────────────────────────────────────────────────
+### What Each Deploy Command Does Step by Step
 
-git pull origin main                # Get latest changes
-git add <files>                     # Stage specific files
-git commit -m "feat: description"   # Commit with message
-git push origin main                # Push to remote
-
-# ─────────────────────────────────────────────────────────────
-# FIREBASE (use npx prefix)
-# ─────────────────────────────────────────────────────────────
-
-npx firebase use tripbi-dev   # Switch to dev project
-npx firebase use tripbi-prod  # Switch to prod project (when ready)
-npx firebase use              # Show current project
-
-npx firebase deploy                        # Deploy everything (hosting, rules)
-npx firebase deploy --only hosting         # Deploy hosting only
-npx firebase deploy --only firestore:rules # Deploy Firestore rules
-npx firebase deploy --only functions       # Deploy Cloud Functions
-
-npm run deploy:dev       # Build with dev env + deploy to tripbi-dev
-npm run deploy:prod      # Build with prod env + deploy to tripbi-prod (when ready)
-
-# ─────────────────────────────────────────────────────────────
-# CAPACITOR (MOBILE) - After Phase 8 Setup
-# ─────────────────────────────────────────────────────────────
-
-npx cap sync             # Sync web assets to native projects
-npx cap open android     # Open Android Studio
-npx cap open ios         # Open Xcode
-npx cap run android      # Build and run on Android device/emulator
-npx cap run ios          # Build and run on iOS simulator
+**`npm run deploy`** (deploy to dev):
+```
+1. npm run build:dev          → Bumps build number, compiles TS, bundles with .env.development
+2. npx firebase use dev       → Switches Firebase CLI to tripbi-dev project
+3. npx firebase deploy        → Uploads dist/ to tripbi-dev.web.app
 ```
 
+**`npm run deploy:prod`** (deploy to production):
+```
+1. npm run build              → Bumps build number, compiles TS, bundles with .env.production
+2. npx firebase use prod      → Switches Firebase CLI to tripbi-prod project
+3. npx firebase deploy        → Uploads dist/ to tripbi.app
+```
+
+### The Classic Mistake (and why these scripts exist)
+
+If you manually run `npm run build` then `npx firebase deploy` while pointed at tripbi-dev, you'll deploy **production placeholder keys** to the dev site. It will break with "API key not valid."
+
+The `deploy` and `deploy:prod` scripts prevent this by always pairing the correct build mode with the correct Firebase project.
+
 ---
 
-## Daily Development Workflow
+## All Available Commands
+
+### Development
+
+| Command | Purpose |
+|---------|---------|
+| `npm run dev` | Start local dev server (localhost:5173) |
+| `npm run check` | Run TypeScript compiler + ESLint (pre-deploy sanity check) |
+| `npm run lint` | Run ESLint only |
+| `npm run preview` | Preview a production build locally |
+
+### Build
+
+| Command | Purpose |
+|---------|---------|
+| `npm run build` | **Production** build (reads `.env.production`, bumps build number) |
+| `npm run build:dev` | **Dev** build (reads `.env.development`, bumps build number) |
+| `npm run build:no-bump` | Production build without bumping build number |
+
+### Deploy
+
+| Command | Purpose |
+|---------|---------|
+| `npm run deploy` | Build + deploy to **tripbi-dev.web.app** (testing) |
+| `npm run deploy:dev` | Same as `deploy` (explicit alias) |
+| `npm run deploy:prod` | Build + deploy to **tripbi.app** (production) |
+| `npm run deploy:rules` | Deploy Firestore security rules + indexes to dev |
+| `npm run deploy:functions` | Build + deploy Cloud Functions to dev |
+
+### Version Management
+
+| Command | Purpose |
+|---------|---------|
+| `npm run version:patch` | 0.1.0 → 0.1.1 (bug fixes) |
+| `npm run version:minor` | 0.1.0 → 0.2.0 (new features) |
+| `npm run version:major` | 0.1.0 → 1.0.0 (breaking changes) |
+| `npm run version:sync` | Sync version to Android/iOS (Capacitor) |
+
+Build number increments **automatically** on every `build` or `build:dev`. You only need the version commands for semantic version bumps.
+
+### Testing
+
+| Command | Purpose |
+|---------|---------|
+| `npm run test` | Run unit tests in watch mode |
+| `npm run test:run` | Run unit tests once (CI mode) |
+| `npm run test:coverage` | Run tests with coverage report |
+| `npm run test:e2e` | Run Playwright end-to-end tests |
+
+---
+
+## Daily Workflow
 
 ### Starting Your Day
 
 ```bash
-# 1. Pull latest changes
-git pull origin main
-
-# 2. Start dev server
-npm run dev
-
-# 3. Open browser to http://localhost:5173
+git pull origin main          # Get latest changes
+npm run dev                   # Start local server → http://localhost:5173
 ```
 
-### Working on a Feature (Current: Direct to Main)
+### Making Changes
 
 ```bash
-# 1. Pull latest and start working
-git pull origin main
+# 1. Code your changes locally with npm run dev running
 
-# 2. Make your changes...
-
-# 3. Test locally
-npm run dev
-npm run lint
-npx tsc --noEmit
-
-# 4. Commit your changes
-git add <specific-files>
-git commit -m "feat: Add trip creation flow"
-
-# 5. Push to main
-git push origin main
-
-# 6. Deploy to dev for testing
-npm run deploy:dev
-```
-
-### Working on a Feature (Future: Branch-Based)
-
-When the team grows, use feature branches:
-
-```bash
-git checkout -b feature/add-trip-creation
-# Make changes...
-git push -u origin feature/add-trip-creation
-# Create PR on GitHub: feature/add-trip-creation → main
-```
-
-### After Making Changes
-
-```bash
-# 1. Verify code compiles and lints
-npx tsc --noEmit
-npm run lint
-
-# 2. Commit changes
-git add <specific-files>
-git commit -m "feat: Description of change"
-git push origin main
+# 2. Verify before deploying
+npm run check                 # TypeScript + lint in one command
 
 # 3. Deploy to dev for testing
-npm run deploy:dev
+npm run deploy                # Builds + deploys to tripbi-dev.web.app
 
-# 4. Test on dev environment
-# Visit: https://tripbi-dev.web.app
+# 4. Test at https://tripbi-dev.web.app
+
+# 5. Commit when satisfied
+git add <files>
+git commit -m "feat: description"
+git push origin main
+```
+
+### Deploying Firestore Rules or Cloud Functions
+
+```bash
+# After editing firestore.rules or firestore.indexes.json
+npm run deploy:rules
+
+# After editing functions/src/index.ts
+npm run deploy:functions
 ```
 
 ---
 
-## Deployment Workflows
+## Environments Reference
 
-### Current Setup: Manual Deployment
-
-CI/CD is not set up yet. All deployments are manual.
-
-**IMPORTANT:** Use `build:dev` when deploying to tripbi-dev (uses `.env.development` credentials).
-
-### Deploy to tripbi-dev (Current)
-
-```bash
-# Option 1: Single command (recommended)
-npm run deploy:dev
-
-# Option 2: Step by step
-npm run build:dev                      # Build with .env.development
-npx firebase deploy --only hosting     # Deploy to Firebase
-```
-
-### Deploy to tripbi-prod (Future - Not Set Up Yet)
-
-```bash
-# When tripbi-prod is configured with real credentials in .env.production:
-npm run deploy:prod
-```
-
-### Why build:dev vs build?
-
-| Command | Environment File | Firebase Project | Use When |
-|---------|------------------|------------------|----------|
-| `npm run build` | `.env.production` | tripbi-prod | Deploying to production |
-| `npm run build:dev` | `.env.development` | tripbi-dev | Deploying to dev |
-
-**Common Mistake:** Using `npm run build` for tripbi-dev will fail with "API key not valid" because `.env.production` has placeholder values.
+| | Local | Dev (Testing) | Prod (Live) |
+|---|---|---|---|
+| **URL** | localhost:5173 | tripbi-dev.web.app | tripbi.app |
+| **Firebase project** | tripbi-dev | tripbi-dev | tripbi-prod |
+| **Env file** | .env.development | .env.development | .env.production |
+| **Start/deploy** | `npm run dev` | `npm run deploy` | `npm run deploy:prod` |
+| **Status** | Working | Working (build 42) | Not set up yet |
 
 ---
 
-## Mobile Deployment
+## Environment Files
 
-### Android (Google Play Store)
+| File | Contains | When it's read |
+|------|----------|---------------|
+| `.env.development` | Real tripbi-dev Firebase keys, SplitBi keys | `npm run dev`, `npm run deploy` |
+| `.env.production` | tripbi-prod keys (placeholders until prod setup) | `npm run build`, `npm run deploy:prod` |
+| `.env.example` | Template showing all required variables | Reference only |
+| `functions/.env` | Resend API key (for Cloud Functions) | Cloud Functions runtime |
 
-```bash
-# 1. Ensure version is updated
-npm run version:minor        # or patch/major
-npm run version:sync         # Sync to Android
-
-# 2. Build web assets
-npm run build
-
-# 3. Sync to Android
-npx cap sync android
-
-# 4. Open Android Studio
-npx cap open android
-
-# 5. In Android Studio:
-#    - Build → Generate Signed Bundle/APK
-#    - Choose Android App Bundle (.aab)
-#    - Sign with your upload keystore
-#    - Build Release
-
-# 6. Upload to Play Console:
-#    - Go to https://play.google.com/console
-#    - Select TripBi app
-#    - Production → Create new release
-#    - Upload the .aab file
-#    - Add release notes
-#    - Submit for review
-```
-
-### iOS (Apple App Store)
-
-```bash
-# 1. Ensure version is updated
-npm run version:minor        # or patch/major
-npm run version:sync         # Sync to iOS
-
-# 2. Build web assets
-npm run build
-
-# 3. Sync to iOS
-npx cap sync ios
-
-# 4. Open Xcode
-npx cap open ios
-
-# 5. In Xcode:
-#    - Select "Any iOS Device" as target
-#    - Product → Archive
-#    - Wait for archive to complete
-#    - Organizer opens → Distribute App
-#    - Choose "App Store Connect"
-#    - Upload
-
-# 6. In App Store Connect:
-#    - Go to https://appstoreconnect.apple.com
-#    - Select TripBi app
-#    - Create new version
-#    - Add build from uploaded archive
-#    - Fill in metadata
-#    - Submit for review
-```
-
----
-
-## Release Checklist
-
-### Before Any Release
-
-- [ ] All tests passing locally
-- [ ] Lint errors fixed (`npm run lint`)
-- [ ] Build succeeds (`npm run build:no-bump`)
-- [ ] Tested on dev environment
-- [ ] Version bumped appropriately
-- [ ] CHANGELOG updated (if maintaining one)
-
-### Web Release (Manual - Current Process)
-
-- [ ] Code committed and pushed to `main`
-- [ ] Run `npm run deploy:dev`
-- [ ] Verify deployment at https://tripbi-dev.web.app
-- [ ] Smoke test critical flows (login, create trip, proposals)
-
-### Mobile Release
-
-- [ ] Version synced (`npm run version:sync`)
-- [ ] Web build complete (`npm run build`)
-- [ ] Native sync complete (`npx cap sync`)
-- [ ] Signed release build created
-- [ ] Uploaded to store
-- [ ] Release notes written
-- [ ] Submitted for review
+**Note:** `.env.development` is committed to git (dev keys are safe to share). `.env.production` will contain real keys once tripbi-prod is set up — at that point, consider moving prod secrets to GitHub Secrets for CI/CD only.
 
 ---
 
 ## Troubleshooting
 
-### Dev Server Won't Start
+### "API Key Not Valid" After Deploy
+
+**Cause:** Wrong `.env` file was used during build.
 
 ```bash
-# Clear node_modules and reinstall
-rm -rf node_modules
-npm install
-npm run dev
-```
-
-### Build Fails
-
-```bash
-# Check for TypeScript errors
-npx tsc --noEmit
-
-# Check for lint errors
-npm run lint
+# Fix: redeploy with the correct command
+npm run deploy                # For dev
+npm run deploy:prod           # For prod
 ```
 
 ### Firebase Deploy Fails
 
 ```bash
-# Check you're logged in
-npx firebase login
-
-# Check current project
-npx firebase use
-
-# Should show: tripbi-dev
-# If wrong project, switch:
-npx firebase use tripbi-dev
-
-# Re-authenticate if needed
-npx firebase login --reauth
+npx firebase login            # Check you're logged in
+npx firebase use              # Check current project
+npx firebase login --reauth   # Re-authenticate if needed
 ```
 
-### "API Key Not Valid" Error After Deploy
-
-**Cause:** You used `npm run build` instead of `npm run build:dev`
-
-**Fix:**
-```bash
-npm run build:dev                      # Rebuild with dev credentials
-npx firebase deploy --only hosting     # Redeploy
-```
-
-### Version Not Showing in App
+### Build Fails
 
 ```bash
-# Rebuild with fresh version
-npm run build:no-bump
-npm run dev
+npm run check                 # See TypeScript + lint errors
 ```
 
----
+### Dev Server Won't Start
 
-## Environment Quick Reference
-
-| Environment | URL | Firebase Project | Env File | Build Command |
-|-------------|-----|------------------|----------|---------------|
-| Local | localhost:5173 | tripbi-dev | `.env.development` | `npm run dev` |
-| Development | tripbi-dev.web.app | tripbi-dev | `.env.development` | `npm run build:dev` |
-| Production | tripbi.app | tripbi-prod | `.env.production` | `npm run build` |
-
-**Note:** Production (tripbi-prod) is not set up yet. Currently deploying to tripbi-dev only.
-
----
-
-## Key Files
-
-| File | Purpose |
-|------|---------|
-| `CLAUDE.md` | Project context & decisions |
-| `version.json` | App version (auto-incremented on build) |
-| `.env.development` | Dev Firebase config (tripbi-dev credentials) |
-| `.env.production` | Prod Firebase config (placeholder - not set up) |
-| `firebase.json` | Firebase deployment config |
-| `firestore.rules` | Firestore security rules |
-| `src/lib/firebase.ts` | Firebase initialization code |
-| `docs/FEATURES.md` | All implemented features documentation |
-
----
-
-## Need Help?
-
-- **Project context:** Read `CLAUDE.md`
-- **Features reference:** Read `docs/FEATURES.md`
-- **Firebase setup:** Read `docs/setup/FIREBASE_SETUP.md`
-- **Version management:** Read `docs/guides/VERSION_MANAGEMENT.md`
-- **Design system:** Read `docs/architecture/DESIGN_SYSTEM.md`
+```bash
+rm -rf node_modules && npm install && npm run dev
+```

@@ -2,7 +2,7 @@
 
 ## Project Status
 
-**Last Updated:** January 24, 2026
+**Last Updated:** February 14, 2026
 
 ### Current State - MVP Features
 
@@ -178,60 +178,43 @@ sharedTimelines/{token}
 ```bash
 # Local Development
 npm run dev                    # Start dev server (localhost:5173)
-npm run lint                   # ESLint
-npx tsc --noEmit              # Type check
+npm run check                  # TypeScript + ESLint (pre-deploy check)
+npm run lint                   # ESLint only
 npm run test                   # Run unit tests (vitest)
 npm run test:run              # Run tests once (CI mode)
 
-# Build (IMPORTANT: use correct mode!)
+# Deploy (use these — they handle build mode + Firebase project automatically)
+npm run deploy                 # Build + deploy to tripbi-dev (testing)
+npm run deploy:prod            # Build + deploy to tripbi-prod (production)
+npm run deploy:rules           # Deploy Firestore rules + indexes to dev
+npm run deploy:functions       # Build + deploy Cloud Functions to dev
+
+# Build only (without deploying)
 npm run build                  # Production build (uses .env.production)
-npm run build:dev             # Development build (uses .env.development)
-
-# Deploy (RECOMMENDED - use these!)
-npm run deploy:dev            # Build + deploy to tripbi-dev
-npm run deploy:prod           # Build + deploy to tripbi-prod
-
-# Manual Firebase Deploy (only if needed)
-npx firebase deploy --only hosting            # Deploy app (after build)
-npx firebase deploy --only firestore:rules    # Deploy security rules
-npx firebase deploy --only firestore:indexes  # Deploy indexes
-npx firebase emulators:start                  # Local emulators
-
-# Cloud Functions
-cd functions && npm run build                 # Build functions
-npx firebase deploy --only functions          # Deploy functions
-
-# Set Resend API Key (required for email invites)
-npx firebase functions:secrets:set RESEND_API_KEY
+npm run build:dev              # Dev build (uses .env.development)
 ```
 
 ### Daily Developer Workflow
 
-**IMPORTANT:** Always use the correct deploy command for the target environment!
+```
+LOCAL DEV  ──►  DEV (testing)  ──►  PROD (live)
+npm run dev     npm run deploy      npm run deploy:prod
+localhost:5173  tripbi-dev.web.app  tripbi.app
+```
 
-1. **Local Development:**
-   ```bash
-   npm run dev                  # Runs on localhost:5173, uses .env.development
-   ```
+1. **Work locally:** `npm run dev`
+2. **Check before deploy:** `npm run check`
+3. **Deploy to dev for testing:** `npm run deploy`
+4. **Deploy to production:** `npm run deploy:prod` *(when tripbi-prod is set up)*
 
-2. **Deploy to Dev (tripbi-dev.web.app):**
-   ```bash
-   npm run deploy:dev           # Builds with .env.development, deploys to tripbi-dev
-   ```
-
-3. **Deploy to Prod (tripbi.app):** *(when ready)*
-   ```bash
-   npm run deploy:prod          # Builds with .env.production, deploys to tripbi-prod
-   ```
-
-**Common Mistake:** Running `npm run build` then `npx firebase deploy` will use production config (placeholder values) and break the dev site. Always use `npm run deploy:dev` for dev deployments.
+**See `docs/guides/DAILY_WORKFLOW.md` for full details on how env vars and build modes work.**
 
 ### Environment Files
 
 | File | Purpose | Used By |
 |------|---------|---------|
-| `.env.development` | tripbi-dev Firebase config | `npm run dev`, `npm run deploy:dev` |
-| `.env.production` | tripbi-prod Firebase config | `npm run deploy:prod` |
+| `.env.development` | tripbi-dev Firebase config | `npm run dev`, `npm run deploy` |
+| `.env.production` | tripbi-prod Firebase config | `npm run build`, `npm run deploy:prod` |
 | `.env.example` | Template for required variables | Reference only |
 
 **Note:** `.env.development` contains real API keys for tripbi-dev. `.env.production` has placeholders until tripbi-prod is set up.
